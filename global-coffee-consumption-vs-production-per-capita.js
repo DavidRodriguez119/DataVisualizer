@@ -85,20 +85,80 @@ function GlobalCoffeeConsumptionVsProduction() {
     return data;
   };
 
+  //set the values that are going to be displayed in each axes of the graph
   this.setup = function() {
+    
+    var self = this;
+
     // Font defaults.
     textSize(16);
 
     //set the values of the top x axis
-
-
+    const consumptionMax = self.getMax(self.organizedData, 'consumption');
+    this.xTopAxisDivisions = self.getDivisions(consumptionMax, self.layout.numXTickLabels)
     //set the values of the bottom x axis
-
+    const productionMax = self.getMax(self.organizedData, `production`);
+    this.xBottomAxisDivisions = self.getDivisions(productionMax, self.layout.numXTickLabels);
 
     //set the values of the y axis
-
+    this.countriesList = [];
+    for (let i = 0; i < self.organizedData.length; i++) {
+      this.countriesList.push(self.organizedData[i].country)
+    };
   };
 
   this.destroy = function() {
+
+  };
+
+  // Browses an array of objects and gets the max. value of a specific key
+  this.getMax = function(arrayOfObjects, keyName) {
+    
+    let maxValue = 0;
+
+    arrayOfObjects.forEach(obj => {
+
+      if (obj[keyName] > maxValue) {
+        maxValue = obj[keyName]
+      }
+    });
+
+    return Math.ceil(maxValue);
+  };
+
+  //Get the divisions of the x axes
+  this.getDivisions = function(max, numDivisions){
+    //max value divided in the number of desired divisions to obtain the increment value
+    const increments = Math.ceil(max/numDivisions)
+    const divisions = []
+    for (let i = 0; i <= numDivisions; i++) {
+      divisions.push(i * increments);      
+    };
+
+    return divisions
+  };
+
+  this.draw = function(){
+    //copied the if statement from the "pay-gap-1997-2017" code
+    if (!this.loaded) {
+      console.log('Data not yet loaded');
+      return;
+    }
+
+    this.drawTitle();
+    
+  };
+
+  this.drawTitle = function() {
+    fill(0);
+    noStroke();
+    textAlign('center', 'center');
+
+    textSize(24);
+    textFont(`Georgia`)
+    text(this.title,
+         (this.layout.plotWidth() / 2) + this.layout.leftMargin,
+         this.layout.topMargin - (this.layout.marginSize));
   };
 };
+

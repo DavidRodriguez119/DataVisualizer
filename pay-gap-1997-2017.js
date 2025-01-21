@@ -60,7 +60,6 @@ function PayGapTimeSeries() {
       function(table) {
         self.loaded = true;
       });
-
   };
 
   this.setup = function() {
