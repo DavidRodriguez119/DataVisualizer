@@ -24,7 +24,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     // size due to axis and tick labels.
     leftMargin: marginSize * 2,
     rightMargin: width - marginSize,
-    topMargin: marginSize * 2,
+    topMargin: marginSize *2,
     bottomMargin: height - marginSize * 2,
     pad: 5,
 
@@ -145,11 +145,14 @@ function GlobalCoffeeConsumptionVsProduction() {
       return;
     }
 
-    this.drawTitle();
+    this.drawTitles();
     
+    this.drawXAxes();
+
+    this.drawXAxesLabels();
   };
 
-  this.drawTitle = function() {
+  this.drawTitles = function() {
     fill(0);
     noStroke();
     textAlign('center', 'center');
@@ -158,7 +161,62 @@ function GlobalCoffeeConsumptionVsProduction() {
     textFont(`Georgia`)
     text(this.title,
          (this.layout.plotWidth() / 2) + this.layout.leftMargin,
-         this.layout.topMargin - (this.layout.marginSize));
+         this.layout.topMargin - (this.layout.marginSize + 20));
+  };
+
+  this.drawXAxes = function(){
+    stroke(0);
+      // x-axis (top amd Bottom)
+    line(this.layout.leftMargin,
+      this.layout.bottomMargin,
+      this.layout.rightMargin,
+      this.layout.bottomMargin);
+    line(this.layout.leftMargin,
+      this.layout.topMargin + 5,
+      this.layout.rightMargin,
+      this.layout.topMargin + 5);
+  };
+
+  //decided to use my own version of the drawAxesLabels function because I need some extra functionality only for this data set
+  //copied part of the drawAxisLabes function inside the helper-functions.js
+  this.drawXAxesLabels = function (){
+    fill(0);
+    noStroke();
+    textSize(12);
+    textAlign('center', 'center');
+
+    //draw bottom X Axis
+    text(this.xBottomAxisLabel, 
+      (this.layout.plotWidth()/2) + this.layout.leftMargin,
+      this.layout.bottomMargin + (this.layout.marginSize * 1.5))
+    //draw top X Axis
+    text(this.xTopAxisLabel, 
+      (this.layout.plotWidth()/2) + this.layout.leftMargin,
+      this.layout.topMargin - (this.layout.marginSize ))
+
+    //draw y axis
+    push();
+      translate(this.layout.leftMargin - (this.layout.marginSize * 1.5),
+        this.layout.bottomMargin / 2);
+      rotate(- PI / 2);
+      text(this.yAxisLabel, 0, 0);
+    pop();
+  };
+
+  this.mapProductionValueToWidth = function (value){
+    return map(value,
+                0,
+                this.productionMax,
+                this.layout.leftMargin,
+                this.layout.rightMargin);
+  };
+
+  this.mapConsumptionValueToWidth = function (value){
+    return map(value,
+                0,
+                this.consumptionMax,
+                this.layout.leftMargin,
+                this.layout.rightMargin); 
   };
 };
 
