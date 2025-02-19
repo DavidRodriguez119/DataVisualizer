@@ -10,7 +10,7 @@ function PayGapTimeSeries() {
   // Title to display above the plot.
   this.title = 'Gender Pay Gap: Average difference between male and female pay.';
 
-    // Names for each axis.
+  // Names for each axis.
   this.xAxisLabel = 'year';
   this.yAxisLabel = '%';
 
@@ -60,7 +60,6 @@ function PayGapTimeSeries() {
       function(table) {
         self.loaded = true;
       });
-
   };
 
   this.setup = function() {
