@@ -42,7 +42,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     // Number of axis tick labels to draw so that they are not drawn on
     // top of one another.
     numXTickLabels: 12,
-    numYTickLabels: 25,
+    numYTickLabels: 15,
   };
 
   // Property to represent whether data has been loaded.
@@ -63,10 +63,7 @@ function GlobalCoffeeConsumptionVsProduction() {
       self.loaded = true;
 
       self.organizedData = self.organizeData(table);
-
-      console.log(self.organizedData)
     });
-
   };
 
   //function to organized the raw data in object format
@@ -81,7 +78,7 @@ function GlobalCoffeeConsumptionVsProduction() {
         consumption: parseFloat(row.get(`Per Capita (Kg)`))
       });
     };
-
+    console.log(data)
     return data;
   };
 
@@ -96,6 +93,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     //set the values of the top x axis
     const consumptionMax = self.getMax(self.organizedData, 'consumption');
     this.xTopAxisDivisions = self.getDivisions(consumptionMax, self.layout.numXTickLabels)
+
     //set the values of the bottom x axis
     const productionMax = self.getMax(self.organizedData, `production`);
     this.xBottomAxisDivisions = self.getDivisions(productionMax, self.layout.numXTickLabels);
@@ -105,6 +103,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     for (let i = 0; i < self.organizedData.length; i++) {
       this.countriesList.push(self.organizedData[i].country)
     };
+    
   };
 
   this.destroy = function() {
@@ -127,6 +126,7 @@ function GlobalCoffeeConsumptionVsProduction() {
   };
 
   //Get the divisions of the x axes
+  // Returns an array of x-values
   this.getDivisions = function(max, numDivisions){
     //max value divided in the number of desired divisions to obtain the increment value
     const increments = Math.ceil(max/numDivisions)
