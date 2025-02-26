@@ -24,7 +24,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     // size due to axis and tick labels.
     leftMargin: marginSize * 2,
     rightMargin: width - marginSize,
-    topMargin: marginSize *2,
+    topMargin: marginSize *2 + 5,
     bottomMargin: height - marginSize * 2,
     pad: 5,
 
@@ -150,6 +150,8 @@ function GlobalCoffeeConsumptionVsProduction() {
     this.drawXAxes();
 
     this.drawXAxesLabels();
+
+    this.drawYAxis();
   };
 
   this.drawTitles = function() {
@@ -166,15 +168,15 @@ function GlobalCoffeeConsumptionVsProduction() {
 
   this.drawXAxes = function(){
     stroke(0);
-      // x-axis (top amd Bottom)
+    // x-axis (top amd Bottom)
     line(this.layout.leftMargin,
       this.layout.bottomMargin,
       this.layout.rightMargin,
       this.layout.bottomMargin);
     line(this.layout.leftMargin,
-      this.layout.topMargin + 5,
+      this.layout.topMargin,
       this.layout.rightMargin,
-      this.layout.topMargin + 5);
+      this.layout.topMargin);
   };
 
   //decided to use my own version of the drawAxesLabels function because I need some extra functionality only for this data set
@@ -185,22 +187,40 @@ function GlobalCoffeeConsumptionVsProduction() {
     textSize(12);
     textAlign('center', 'center');
 
-    //draw bottom X Axis
+    //draw bottom X Axis label
     text(this.xBottomAxisLabel, 
       (this.layout.plotWidth()/2) + this.layout.leftMargin,
       this.layout.bottomMargin + (this.layout.marginSize * 1.5))
-    //draw top X Axis
+    
+    //draw top X Axis label
     text(this.xTopAxisLabel, 
       (this.layout.plotWidth()/2) + this.layout.leftMargin,
       this.layout.topMargin - (this.layout.marginSize ))
 
-    //draw y axis
+    //draw y axis label
     push();
       translate(this.layout.leftMargin - (this.layout.marginSize * 1.5),
         this.layout.bottomMargin / 2);
       rotate(- PI / 2);
       text(this.yAxisLabel, 0, 0);
     pop();
+  };
+
+  //Draw Y axis line
+  this.drawYAxis = function (){
+    stroke(0)
+    line(this.layout.leftMargin,
+      this.layout.topMargin,
+      this.layout.leftMargin,
+      this.layout.bottomMargin
+    );
+    stroke(255, 0, 0)
+    line(this.layout.leftMargin +15,
+      this.layout.topMargin,
+      this.layout.leftMargin + 15,
+      this.layout.topMargin + 29
+    )
+
   };
 
   this.mapProductionValueToWidth = function (value){
