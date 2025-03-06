@@ -22,9 +22,9 @@ function GlobalCoffeeConsumptionVsProduction() {
 
     // Locations of margin positions. Left and bottom have double margin
     // size due to axis and tick labels.
-    leftMargin: marginSize * 2,
+    leftMargin: marginSize * 3,
     rightMargin: width - marginSize,
-    topMargin: marginSize *2,
+    topMargin: marginSize *2 + 5,
     bottomMargin: height - marginSize * 2,
     pad: 5,
 
@@ -42,7 +42,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     // Number of axis tick labels to draw so that they are not drawn on
     // top of one another.
     numXTickLabels: 12,
-    numYTickLabels: 25,
+    numYTickLabels: 15,
   };
 
   // Property to represent whether data has been loaded.
@@ -63,10 +63,7 @@ function GlobalCoffeeConsumptionVsProduction() {
       self.loaded = true;
 
       self.organizedData = self.organizeData(table);
-
-      console.log(self.organizedData)
     });
-
   };
 
   //function to organized the raw data in object format
@@ -81,7 +78,7 @@ function GlobalCoffeeConsumptionVsProduction() {
         consumption: parseFloat(row.get(`Per Capita (Kg)`))
       });
     };
-
+    console.log(data)
     return data;
   };
 
@@ -96,6 +93,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     //set the values of the top x axis
     const consumptionMax = self.getMax(self.organizedData, 'consumption');
     this.xTopAxisDivisions = self.getDivisions(consumptionMax, self.layout.numXTickLabels)
+
     //set the values of the bottom x axis
     const productionMax = self.getMax(self.organizedData, `production`);
     this.xBottomAxisDivisions = self.getDivisions(productionMax, self.layout.numXTickLabels);
@@ -105,6 +103,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     for (let i = 0; i < self.organizedData.length; i++) {
       this.countriesList.push(self.organizedData[i].country)
     };
+    
   };
 
   this.destroy = function() {
@@ -127,6 +126,7 @@ function GlobalCoffeeConsumptionVsProduction() {
   };
 
   //Get the divisions of the x axes
+  // Returns an array of x-values
   this.getDivisions = function(max, numDivisions){
     //max value divided in the number of desired divisions to obtain the increment value
     const increments = Math.ceil(max/numDivisions)
@@ -149,7 +149,11 @@ function GlobalCoffeeConsumptionVsProduction() {
     
     this.drawXAxes();
 
-    this.drawXAxesLabels();
+    this.drawAxesLabels();
+
+    this.drawYAxis();
+
+    this.drawChart();
   };
 
   this.drawTitles = function() {
@@ -166,41 +170,52 @@ function GlobalCoffeeConsumptionVsProduction() {
 
   this.drawXAxes = function(){
     stroke(0);
-      // x-axis (top amd Bottom)
+    // x-axis (top amd Bottom)
     line(this.layout.leftMargin,
       this.layout.bottomMargin,
       this.layout.rightMargin,
       this.layout.bottomMargin);
     line(this.layout.leftMargin,
-      this.layout.topMargin + 5,
+      this.layout.topMargin,
       this.layout.rightMargin,
-      this.layout.topMargin + 5);
+      this.layout.topMargin);
   };
 
   //decided to use my own version of the drawAxesLabels function because I need some extra functionality only for this data set
   //copied part of the drawAxisLabes function inside the helper-functions.js
-  this.drawXAxesLabels = function (){
+  this.drawAxesLabels = function (){
     fill(0);
     noStroke();
     textSize(12);
     textAlign('center', 'center');
 
-    //draw bottom X Axis
+    //draw bottom X Axis label
     text(this.xBottomAxisLabel, 
       (this.layout.plotWidth()/2) + this.layout.leftMargin,
-      this.layout.bottomMargin + (this.layout.marginSize * 1.5))
-    //draw top X Axis
+      this.layout.bottomMargin + (this.layout.marginSize * 1.8))
+    
+    //draw top X Axis label
     text(this.xTopAxisLabel, 
       (this.layout.plotWidth()/2) + this.layout.leftMargin,
       this.layout.topMargin - (this.layout.marginSize ))
 
-    //draw y axis
+    //draw y axis label
     push();
-      translate(this.layout.leftMargin - (this.layout.marginSize * 1.5),
+      translate(this.layout.leftMargin - (this.layout.marginSize * 2.5),
         this.layout.bottomMargin / 2);
       rotate(- PI / 2);
       text(this.yAxisLabel, 0, 0);
     pop();
+  };
+
+  //Draw Y axis line
+  this.drawYAxis = function (){
+    stroke(0)
+    line(this.layout.leftMargin,
+      this.layout.topMargin,
+      this.layout.leftMargin,
+      this.layout.bottomMargin
+    );
   };
 
   this.mapProductionValueToWidth = function (value){
@@ -217,6 +232,28 @@ function GlobalCoffeeConsumptionVsProduction() {
                 this.consumptionMax,
                 this.layout.leftMargin,
                 this.layout.rightMargin); 
+  };
+
+  this.drawChart = function () {
+    //how much distance will each data value occupy vertically
+    const distPerCountry = Math.floor((this.layout.bottomMargin - this.layout.topMargin) / this.layout.numYTickLabels)
+    
+    //vertical distance that each bar will occupy
+    const rectHeight = Math.floor(32.7 * distPerCountry / 100)
+
+    //array or y-coordinates. each is a starting point for one data value
+    const initialYCoordinate = [];
+    for (let i = 0; i < this.layout.numYTickLabels; i++) {
+      initialYCoordinate.push(this.layout.topMargin + distPerCountry * i)
+      stroke(255, 0, 0)
+      line(this.layout.leftMargin + 5*i,
+            initialYCoordinate[i],
+            this.layout.leftMargin + 5 * i,
+            distPerCountry + initialYCoordinate[i]
+      )
+    };
+
+    
   };
 };
 
