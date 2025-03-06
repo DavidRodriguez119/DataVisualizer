@@ -48,25 +48,32 @@ function GlobalCoffeeConsumptionVsProduction() {
   // Property to represent whether data has been loaded.
   this.loaded = false;
 
-  //Property to represent the data
-  this.organizedData = [];
-
-  // Preload the data. This function is called automatically by the
-  // gallery when a visualisation is added.
+  // Preload the data. This function is called automatically by the gallery when a visualisation is added.
   this.preload = function() {
     var self = this;
     this.data = loadTable(
       './data/global-coffee-consumption-vs-production-per-capita/global-coffee-consumption-vs-productio.csv', 'csv', 'header',
     // Callback function to set the value
-    // this.loaded to true.
     function(table) {
       self.loaded = true;
-
-      self.organizedData = self.organizeData(table);
     });
   };
 
-  //function to organized the raw data in object format
+  //set the values that are going to be displayed in each axes of the graph
+  this.setup = function() {
+
+    // Font defaults.
+    textSize(16);
+
+  };
+
+  this.destroy = function() {
+
+  };
+
+  ////////////////////////////////////////// Helper Functions ////////////////////////////////////////
+
+  //Organized the raw data in object format (countries, production, consumption)
   this.organizeData = function (table){
     let data = [];
     //get the information one at a time and add it the organizedData array as an object
@@ -78,50 +85,17 @@ function GlobalCoffeeConsumptionVsProduction() {
         consumption: parseFloat(row.get(`Per Capita (Kg)`))
       });
     };
-    console.log(data)
     return data;
-  };
-
-  //set the values that are going to be displayed in each axes of the graph
-  this.setup = function() {
-    
-    var self = this;
-
-    // Font defaults.
-    textSize(16);
-
-    //set the values of the top x axis
-    const consumptionMax = self.getMax(self.organizedData, 'consumption');
-    this.xTopAxisDivisions = self.getDivisions(consumptionMax, self.layout.numXTickLabels)
-
-    //set the values of the bottom x axis
-    const productionMax = self.getMax(self.organizedData, `production`);
-    this.xBottomAxisDivisions = self.getDivisions(productionMax, self.layout.numXTickLabels);
-
-    //set the values of the y axis
-    this.countriesList = [];
-    for (let i = 0; i < self.organizedData.length; i++) {
-      this.countriesList.push(self.organizedData[i].country)
-    };
-    
-  };
-
-  this.destroy = function() {
-
   };
 
   // Browses an array of objects and gets the max. value of a specific key
   this.getMax = function(arrayOfObjects, keyName) {
-    
     let maxValue = 0;
-
     arrayOfObjects.forEach(obj => {
-
       if (obj[keyName] > maxValue) {
         maxValue = obj[keyName]
       }
     });
-
     return Math.ceil(maxValue);
   };
 
@@ -138,6 +112,30 @@ function GlobalCoffeeConsumptionVsProduction() {
     return divisions
   };
 
+  //Functions to map the values of production and consumption to the width of the graph
+  this.mapValueToWidth = function (value, maxValue){
+    console.log(`left M is ${this.layout.leftMargin}`);
+    console.log(`right M is ${this.layout.rightMargin}`);
+    return map(value,
+                0,
+                maxValue,
+                this.layout.leftMargin,
+                this.layout.rightMargin);
+  };
+
+  /////////////////////////////////////// Create Important Values ///////////////////////////////////
+
+  //Property to represent the data with the original values
+  this.organizedData = [];
+  //Property to represent the data with the values mapped to the width of the graph
+  this.mappedData = [];
+
+  this.consumptionMax = 0;
+
+  this.productionMax = 0;
+
+  /////////////////////////////////////// Main Draw Function ////////////////////////////////////
+
   this.draw = function(){
     //copied the if statement from the "pay-gap-1997-2017" code
     if (!this.loaded) {
@@ -145,7 +143,14 @@ function GlobalCoffeeConsumptionVsProduction() {
       return;
     }
 
-    this.drawTitles();
+    this.organizedData = this.organizeData(this.data);
+
+    this.consumptionMax = this.getMax(this.organizedData, 'consumption');
+
+    this.productionMax = this.getMax(this.organizedData, `production`);
+
+    //draw chart
+    this.drawTitle();
     
     this.drawXAxes();
 
@@ -153,10 +158,15 @@ function GlobalCoffeeConsumptionVsProduction() {
 
     this.drawYAxis();
 
+    this.drawXAxesDivisions();
+
     this.drawChart();
   };
 
-  this.drawTitles = function() {
+  //////////////////////////////////////// Sub - Draw Functions //////////////////////////////////////
+
+  //Draw the title of the chart
+  this.drawTitle = function() {
     fill(0);
     noStroke();
     textAlign('center', 'center');
@@ -168,6 +178,7 @@ function GlobalCoffeeConsumptionVsProduction() {
          this.layout.topMargin - (this.layout.marginSize + 20));
   };
 
+  //draw the lines that will represent the two horizontal Axes
   this.drawXAxes = function(){
     stroke(0);
     // x-axis (top amd Bottom)
@@ -218,20 +229,16 @@ function GlobalCoffeeConsumptionVsProduction() {
     );
   };
 
-  this.mapProductionValueToWidth = function (value){
-    return map(value,
-                0,
-                this.productionMax,
-                this.layout.leftMargin,
-                this.layout.rightMargin);
-  };
+  this.drawXAxesDivisions = function (){
+    //set the values of the top x axis
+    this.xTopAxisDivisions = this.getDivisions(this.consumptionMax, this.layout.numXTickLabels)
 
-  this.mapConsumptionValueToWidth = function (value){
-    return map(value,
-                0,
-                this.consumptionMax,
-                this.layout.leftMargin,
-                this.layout.rightMargin); 
+    //set the values of the bottom x axis
+    this.xBottomAxisDivisions = this.getDivisions(this.productionMax, this.layout.numXTickLabels);
+
+    //Continue.........................
+
+
   };
 
   this.drawChart = function () {
@@ -251,9 +258,10 @@ function GlobalCoffeeConsumptionVsProduction() {
             this.layout.leftMargin + 5 * i,
             distPerCountry + initialYCoordinate[i]
       )
-    };
-
+    };                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
     
+    
+
   };
 };
 
