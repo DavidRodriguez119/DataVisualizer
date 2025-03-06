@@ -88,6 +88,21 @@ function GlobalCoffeeConsumptionVsProduction() {
     return data;
   };
 
+  //Map the data based in the graph's width
+  this.mapData = function(data){
+    const mappedData = [];
+    for (let i = 0; i < data.length; i++) {
+      mappedData.push(
+        {
+          country: data[i].country,
+          production: this.mapValueToWidth(data[i].production, this.productionMax),
+          consumption: this.mapValueToWidth(data[i].consumption, this.consumptionMax)
+        }
+      )
+    };
+    return mappedData
+  };
+
   // Browses an array of objects and gets the max. value of a specific key
   this.getMax = function(arrayOfObjects, keyName) {
     let maxValue = 0;
@@ -114,8 +129,6 @@ function GlobalCoffeeConsumptionVsProduction() {
 
   //Functions to map the values of production and consumption to the width of the graph
   this.mapValueToWidth = function (value, maxValue){
-    console.log(`left M is ${this.layout.leftMargin}`);
-    console.log(`right M is ${this.layout.rightMargin}`);
     return map(value,
                 0,
                 maxValue,
@@ -143,10 +156,13 @@ function GlobalCoffeeConsumptionVsProduction() {
       return;
     }
 
+    // Array of objects with all the imported raw data
     this.organizedData = this.organizeData(this.data);
-
+    // Array of objects with all the data mapped based on the width of the graph
+    this.mappedData = this.mapData(this.organizedData);
+    // Store the largest consumption value
     this.consumptionMax = this.getMax(this.organizedData, 'consumption');
-
+    // Store the largest production value
     this.productionMax = this.getMax(this.organizedData, `production`);
 
     //draw chart
@@ -260,7 +276,7 @@ function GlobalCoffeeConsumptionVsProduction() {
       )
     };                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
     
-    
+    //Continue.........................
 
   };
 };
