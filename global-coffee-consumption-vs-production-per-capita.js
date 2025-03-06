@@ -9,8 +9,8 @@ function GlobalCoffeeConsumptionVsProduction() {
   this.title = 'Global Coffee Consumption vs Production Per Capita';
 
   //names for each axis
-  this.xTopAxisLabel = `Production (tons)`;
-  this.xBottomAxisLabel = `Consumption per Capita (kg)`;
+  this.xTopAxisLabel = `Consumption per Capita (kg)`;
+  this.xBottomAxisLabel = `Production (tons)`;
   this.yAxisLabel = `Countries`
 
   var marginSize = 35;
@@ -247,14 +247,42 @@ function GlobalCoffeeConsumptionVsProduction() {
 
   this.drawXAxesDivisions = function (){
     //set the values of the top x axis
-    this.xTopAxisDivisions = this.getDivisions(this.consumptionMax, this.layout.numXTickLabels)
+    const xTopAxisDivisions = this.getDivisions(this.consumptionMax, this.layout.numXTickLabels)
 
     //set the values of the bottom x axis
-    this.xBottomAxisDivisions = this.getDivisions(this.productionMax, this.layout.numXTickLabels);
+    const xBottomAxisDivisions = this.getDivisions(this.productionMax, this.layout.numXTickLabels);
 
-    //Continue.........................
-
-
+    //draw the top division lines
+    for (let i = 0; i < xTopAxisDivisions.length; i++) {
+      const mappedValue = map(xTopAxisDivisions[i], 0, this.consumptionMax, this.layout.leftMargin, this.layout.rightMargin);
+      line(
+        mappedValue,
+        this.layout.topMargin - 5,
+        mappedValue,
+        this.layout.topMargin + 5,
+      );
+      text(
+        xTopAxisDivisions[i],
+        mappedValue,
+        this.layout.topMargin - 15
+      )
+    };
+    //Draw the bottom division lines
+    for (let i = 0; i < xBottomAxisDivisions.length; i++) {
+      const mappedValue = map(xBottomAxisDivisions[i], 0, this.productionMax, this.layout.leftMargin, this.layout.rightMargin);
+      line(
+        mappedValue,
+        this.layout.bottomMargin - 5,
+        mappedValue,
+        this.layout.bottomMargin + 5,
+      );
+      const formattedValue = xBottomAxisDivisions[i].toLocaleString();
+      text(
+        formattedValue,
+        mappedValue,
+        this.layout.bottomMargin + 15
+      )
+    };
   };
 
   this.drawChart = function () {
