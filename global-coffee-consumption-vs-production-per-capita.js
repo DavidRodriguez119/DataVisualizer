@@ -100,6 +100,7 @@ function GlobalCoffeeConsumptionVsProduction() {
         }
       )
     };
+
     return mappedData
   };
 
@@ -134,6 +135,42 @@ function GlobalCoffeeConsumptionVsProduction() {
                 maxValue,
                 this.layout.leftMargin,
                 this.layout.rightMargin);
+  };
+
+  this.drawCountry = function (data, startingPosition, distPerCountry){
+    //vertical distance that each bar will occupy
+    const rectHeight = Math.floor(32.7 * distPerCountry / 100)
+    const emptySpace = Math.floor(17.2 * distPerCountry / 100)
+
+    //draw consumption bar
+    stroke(0);
+    fill(255, 0, 0);
+
+    rect(
+      this.layout.leftMargin,
+      startingPosition + emptySpace,
+      data.consumption - this.layout.leftMargin,
+      rectHeight
+    )
+
+    //draw production bar
+    stroke(0);
+    fill(0, 0, 255);
+
+    rect(
+      this.layout.leftMargin,
+      startingPosition + emptySpace + rectHeight,
+      data.production - this.layout.leftMargin,
+      rectHeight
+    );
+
+    //Draw country label
+    fill(0);
+    text(
+      data.country,
+      this.layout.leftMargin - 35,
+      startingPosition + emptySpace + rectHeight
+    )
   };
 
   /////////////////////////////////////// Create Important Values ///////////////////////////////////
@@ -177,6 +214,24 @@ function GlobalCoffeeConsumptionVsProduction() {
     this.drawXAxesDivisions();
 
     this.drawChart();
+
+    stroke(0);
+    let mouseXCoord = mouseX;
+    let mouseYCoord = mouseY;
+    let coordText = "Mouse X: " + mouseXCoord + ", Mouse Y: " + mouseYCoord;
+  
+    // Make the text position follow the mouse
+    let textX = mouseX;
+    let textY = mouseY;
+  
+    // Adjust text position so it doesn't overlap the mouse
+    textX += 10; // Move text slightly to the right of the mouse
+    textY -= 10; // Move text slightly above the mouse
+  
+    text(coordText, textX, textY); 
+  
+    fill('red');
+    ellipse(mouseX, mouseY, 10, 10);
   };
 
   //////////////////////////////////////// Sub - Draw Functions //////////////////////////////////////
@@ -187,11 +242,11 @@ function GlobalCoffeeConsumptionVsProduction() {
     noStroke();
     textAlign('center', 'center');
 
-    textSize(24);
+    textSize(18);
     textFont(`Georgia`)
     text(this.title,
          (this.layout.plotWidth() / 2) + this.layout.leftMargin,
-         this.layout.topMargin - (this.layout.marginSize + 20));
+         10);
   };
 
   //draw the lines that will represent the two horizontal Axes
@@ -211,17 +266,18 @@ function GlobalCoffeeConsumptionVsProduction() {
   //decided to use my own version of the drawAxesLabels function because I need some extra functionality only for this data set
   //copied part of the drawAxisLabes function inside the helper-functions.js
   this.drawAxesLabels = function (){
-    fill(0);
     noStroke();
     textSize(12);
     textAlign('center', 'center');
 
     //draw bottom X Axis label
+    fill(0, 0, 255);
     text(this.xBottomAxisLabel, 
       (this.layout.plotWidth()/2) + this.layout.leftMargin,
-      this.layout.bottomMargin + (this.layout.marginSize * 1.8))
+      this.layout.bottomMargin + (this.layout.marginSize * 1.3))
     
     //draw top X Axis label
+    fill(255, 0, 0);
     text(this.xTopAxisLabel, 
       (this.layout.plotWidth()/2) + this.layout.leftMargin,
       this.layout.topMargin - (this.layout.marginSize ))
@@ -245,12 +301,16 @@ function GlobalCoffeeConsumptionVsProduction() {
     );
   };
 
+  //Draw
   this.drawXAxesDivisions = function (){
     //set the values of the top x axis
     const xTopAxisDivisions = this.getDivisions(this.consumptionMax, this.layout.numXTickLabels)
 
     //set the values of the bottom x axis
     const xBottomAxisDivisions = this.getDivisions(this.productionMax, this.layout.numXTickLabels);
+
+    fill(0);
+    textSize(14);
 
     //draw the top division lines
     for (let i = 0; i < xTopAxisDivisions.length; i++) {
@@ -289,23 +349,15 @@ function GlobalCoffeeConsumptionVsProduction() {
     //how much distance will each data value occupy vertically
     const distPerCountry = Math.floor((this.layout.bottomMargin - this.layout.topMargin) / this.layout.numYTickLabels)
     
-    //vertical distance that each bar will occupy
-    const rectHeight = Math.floor(32.7 * distPerCountry / 100)
-
     //array or y-coordinates. each is a starting point for one data value
     const initialYCoordinate = [];
     for (let i = 0; i < this.layout.numYTickLabels; i++) {
       initialYCoordinate.push(this.layout.topMargin + distPerCountry * i)
-      stroke(255, 0, 0)
-      line(this.layout.leftMargin + 5*i,
-            initialYCoordinate[i],
-            this.layout.leftMargin + 5 * i,
-            distPerCountry + initialYCoordinate[i]
-      )
     };                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
     
-    //Continue.........................
-
+    for (let i = 0; i < this.mappedData.length; i++) {
+      this.drawCountry(this.mappedData[i], initialYCoordinate[i], distPerCountry);
+    };
   };
 };
 
