@@ -13,6 +13,7 @@ function GlobalCoffeeConsumptionVsProduction() {
   this.xBottomAxisLabel = `Production (tons)`;
   this.yAxisLabel = `Countries`
 
+  //distance from the border of the canvas to the graph
   var marginSize = 35;
 
   // Layout object to store all common plot layout parameters and
@@ -48,6 +49,14 @@ function GlobalCoffeeConsumptionVsProduction() {
   // Property to represent whether data has been loaded.
   this.loaded = false;
 
+  //Property that stores evey value that affects the animation
+  this.animation = {
+    sorting: false,
+    swapping: false,
+    animationSpeed: 5,
+    sortedBy: `production`
+  }
+
   // Preload the data. This function is called automatically by the gallery when a visualisation is added.
   this.preload = function() {
     var self = this;
@@ -59,12 +68,24 @@ function GlobalCoffeeConsumptionVsProduction() {
     });
   };
 
+  //create radio buttons
+  this.radioButton;
+
   //set the values that are going to be displayed in each axes of the graph
   this.setup = function() {
 
     // Font defaults.
     textSize(16);
+    stroke(0);
 
+    //create radio buttons
+    //Radio #1: Sort by production
+    //Radio #2: Sort by consumption
+    this.radioButton = createRadio();
+    this.radioButton.position(this.layout.leftMargin + 300, this.layout.topMargin - 50);
+    this.radioButton.option(`Production`, `production`);
+    this.radioButton.option(`Consumption`, `consumption`)
+    this.radioButton.value(this.animation.sortedBy)
   };
 
   this.destroy = function() {
@@ -173,6 +194,14 @@ function GlobalCoffeeConsumptionVsProduction() {
     )
   };
 
+  //swap the value of two objects inside an array
+  this.swap = function(data, index1, index2, ){
+    const storedValue = data[index1];
+    data[index1] = data[index2];
+    data[index2] = storedValue
+    return data
+  };
+
   /////////////////////////////////////// Create Important Values ///////////////////////////////////
 
   //Property to represent the data with the original values
@@ -193,6 +222,11 @@ function GlobalCoffeeConsumptionVsProduction() {
       return;
     }
 
+    //Text for the radio buttons
+    stroke(0);
+    fill(0);
+    text(`Sort By:`, this.layout.leftMargin + 20, this.layout.topMargin - 68)
+   
     // Array of objects with all the imported raw data
     this.organizedData = this.organizeData(this.data);
     // Array of objects with all the data mapped based on the width of the graph
@@ -214,24 +248,6 @@ function GlobalCoffeeConsumptionVsProduction() {
     this.drawXAxesDivisions();
 
     this.drawChart();
-
-    stroke(0);
-    let mouseXCoord = mouseX;
-    let mouseYCoord = mouseY;
-    let coordText = "Mouse X: " + mouseXCoord + ", Mouse Y: " + mouseYCoord;
-  
-    // Make the text position follow the mouse
-    let textX = mouseX;
-    let textY = mouseY;
-  
-    // Adjust text position so it doesn't overlap the mouse
-    textX += 10; // Move text slightly to the right of the mouse
-    textY -= 10; // Move text slightly above the mouse
-  
-    text(coordText, textX, textY); 
-  
-    fill('red');
-    ellipse(mouseX, mouseY, 10, 10);
   };
 
   //////////////////////////////////////// Sub - Draw Functions //////////////////////////////////////
@@ -360,4 +376,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     };
   };
 };
+
+
+
 
