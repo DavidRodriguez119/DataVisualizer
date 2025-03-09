@@ -44,10 +44,15 @@ function GlobalCoffeeConsumptionVsProduction() {
     // top of one another.
     numXTickLabels: 12,
     numYTickLabels: 15,
+
+    //how much distance will each data value occupy vertically
+    distPerCountry: function () {
+      return Math.floor((this.bottomMargin - this.topMargin) / this.numYTickLabels)
+    }
   };
 
   // Property to represent whether data has been loaded.
-  this.loaded = false;
+  this.loadedData = false;
 
   //Property that stores evey value that affects the animation
   this.animation = {
@@ -63,8 +68,10 @@ function GlobalCoffeeConsumptionVsProduction() {
     this.data = loadTable(
       './data/global-coffee-consumption-vs-production-per-capita/global-coffee-consumption-vs-productio.csv', 'csv', 'header',
     // Callback function to set the value
-    function(table) {
-      self.loaded = true;
+    (table) => {
+      //Map data and set initial values
+      this.initializeValues();
+      this.loadedData = true;
     });
   };
 
@@ -73,7 +80,6 @@ function GlobalCoffeeConsumptionVsProduction() {
 
   //set the values that are going to be displayed in each axes of the graph
   this.setup = function() {
-
     // Font defaults.
     textSize(16);
     stroke(0);
@@ -84,12 +90,14 @@ function GlobalCoffeeConsumptionVsProduction() {
     this.radioButton = createRadio();
     this.radioButton.position(this.layout.leftMargin + 300, this.layout.topMargin - 50);
     this.radioButton.option(`Production`, `production`);
-    this.radioButton.option(`Consumption`, `consumption`)
-    this.radioButton.value(this.animation.sortedBy)
+    this.radioButton.option(`Consumption`, `consumption`);
+    this.radioButton.value(this.animation.sortedBy);
   };
 
   this.destroy = function() {
-
+    if(this.radioButton){
+      this.radioButton.style(`display`, `none`);
+    };
   };
 
   ////////////////////////////////////////// Helper Functions ////////////////////////////////////////
@@ -117,7 +125,8 @@ function GlobalCoffeeConsumptionVsProduction() {
         {
           country: data[i].country,
           production: this.mapValueToWidth(data[i].production, this.productionMax),
-          consumption: this.mapValueToWidth(data[i].consumption, this.consumptionMax)
+          consumption: this.mapValueToWidth(data[i].consumption, this.consumptionMax),
+          currentYPos: this.initialYCoordinate[i],
         }
       )
     };
@@ -159,9 +168,10 @@ function GlobalCoffeeConsumptionVsProduction() {
   };
 
   this.drawCountry = function (data, startingPosition, distPerCountry){
+
     //vertical distance that each bar will occupy
-    const rectHeight = Math.floor(32.7 * distPerCountry / 100)
-    const emptySpace = Math.floor(17.2 * distPerCountry / 100)
+    const rectHeight = Math.floor(32.7 * this.layout.distPerCountry() / 100)
+    const emptySpace = Math.floor(17.2 * this.layout.distPerCountry() / 100)
 
     //draw consumption bar
     stroke(0);
@@ -206,6 +216,7 @@ function GlobalCoffeeConsumptionVsProduction() {
 
   //Property to represent the data with the original values
   this.organizedData = [];
+
   //Property to represent the data with the values mapped to the width of the graph
   this.mappedData = [];
 
@@ -213,29 +224,38 @@ function GlobalCoffeeConsumptionVsProduction() {
 
   this.productionMax = 0;
 
+  //array or y-coordinates. each is a starting point for one data value
+  this.initialYCoordinate = [];
+
+  //map data and prepare all the required variables
+  this.initializeValues = function () {
+    //set initial yPositions
+    for (let i = 0; i < this.layout.numYTickLabels; i++) {
+      this.initialYCoordinate.push(this.layout.topMargin + this.layout.distPerCountry() * i)
+    };  
+    // Array of objects with all the imported raw data
+    this.organizedData = this.organizeData(this.data);
+    // Store the largest consumption value
+    this.consumptionMax = this.getMax(this.organizedData, 'consumption');
+    // Store the largest production value
+    this.productionMax = this.getMax(this.organizedData, `production`);
+    // Array of objects with all the data mapped based on the width of the graph
+    this.mappedData = this.mapData(this.organizedData);
+  };
+
   /////////////////////////////////////// Main Draw Function ////////////////////////////////////
 
   this.draw = function(){
     //copied the if statement from the "pay-gap-1997-2017" code
-    if (!this.loaded) {
+    if (!this.loadedData) {
       console.log('Data not yet loaded');
       return;
     }
-
     //Text for the radio buttons
     stroke(0);
     fill(0);
     text(`Sort By:`, this.layout.leftMargin + 20, this.layout.topMargin - 68)
    
-    // Array of objects with all the imported raw data
-    this.organizedData = this.organizeData(this.data);
-    // Array of objects with all the data mapped based on the width of the graph
-    this.mappedData = this.mapData(this.organizedData);
-    // Store the largest consumption value
-    this.consumptionMax = this.getMax(this.organizedData, 'consumption');
-    // Store the largest production value
-    this.productionMax = this.getMax(this.organizedData, `production`);
-
     //draw chart
     this.drawTitle();
     
@@ -247,7 +267,24 @@ function GlobalCoffeeConsumptionVsProduction() {
 
     this.drawXAxesDivisions();
 
-    this.drawChart();
+    //draw initial chart and draw chart after animation
+    if (this.animation.sorting == false) {
+      for (let i = 0; i < this.mappedData.length; i++) {
+        this.drawCountry(this.mappedData[i], this.mappedData[i].currentYPos, this.layout.distPerCountry());
+      };
+    };
+
+    //animation code
+    // animation starts
+    if(this.radioButton.value() != this.animation.sortedBy){
+      
+      console.log(`Start animation`);
+
+      //Animation takes place here
+      
+      //end of animation
+      this.animation.sortedBy = this.radioButton.value();
+    };
   };
 
   //////////////////////////////////////// Sub - Draw Functions //////////////////////////////////////
@@ -317,7 +354,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     );
   };
 
-  //Draw
+  //Draw the increments in each horizontal axis
   this.drawXAxesDivisions = function (){
     //set the values of the top x axis
     const xTopAxisDivisions = this.getDivisions(this.consumptionMax, this.layout.numXTickLabels)
@@ -361,20 +398,6 @@ function GlobalCoffeeConsumptionVsProduction() {
     };
   };
 
-  this.drawChart = function () {
-    //how much distance will each data value occupy vertically
-    const distPerCountry = Math.floor((this.layout.bottomMargin - this.layout.topMargin) / this.layout.numYTickLabels)
-    
-    //array or y-coordinates. each is a starting point for one data value
-    const initialYCoordinate = [];
-    for (let i = 0; i < this.layout.numYTickLabels; i++) {
-      initialYCoordinate.push(this.layout.topMargin + distPerCountry * i)
-    };                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
-    
-    for (let i = 0; i < this.mappedData.length; i++) {
-      this.drawCountry(this.mappedData[i], initialYCoordinate[i], distPerCountry);
-    };
-  };
 };
 
 
