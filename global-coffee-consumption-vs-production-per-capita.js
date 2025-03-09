@@ -58,7 +58,7 @@ function GlobalCoffeeConsumptionVsProduction() {
   this.animation = {
     sorting: false,
     swapping: false,
-    animationSpeed: 5,
+    animationSpeed: 0.00000001,
     sortedBy: `production`
   }
 
@@ -205,11 +205,89 @@ function GlobalCoffeeConsumptionVsProduction() {
   };
 
   //swap the value of two objects inside an array
-  this.swap = function(data, index1, index2, ){
-    const storedValue = data[index1];
-    data[index1] = data[index2];
-    data[index2] = storedValue
-    return data
+  this.swap = function(data, index1, index2){
+    //swap animation start
+    this.animation.swapping = true;
+    //change positions 
+    if (data[index1].currentYPos > this.initialYCoordinate[index2]) {
+      if (Math.abs(data[index1].currentYPos - this.initialYCoordinate[index2]) < this.layout.distPerCountry()) {
+        data[index1].currentYPos = this.initialYCoordinate[index2]
+      } else {
+        data[index1].currentYPos -= this.animation.animationSpeed 
+      };
+    } else if (data[index1].currentYPos < this.initialYCoordinate[index2]){
+      if (Math.abs(data[index1].currentYPos - this.initialYCoordinate[index2]) < this.layout.distPerCountry()) {
+        data[index1].currentYPos = this.initialYCoordinate[index2]
+      } else {
+        data[index1].currentYPos = data[index1].currentYPos + this.animation.animationSpeed 
+      };
+    };
+
+    if (data[index2].currentYPos > this.initialYCoordinate[index1]) {
+      if (Math.abs(data[index2].currentYPos - this.initialYCoordinate[index1]) < this.layout.distPerCountry()) {
+        data[index2].currentYPos = this.initialYCoordinate[index1]
+      } else {
+        data[index2].currentYPos -= this.animation.animationSpeed 
+      };
+    } else if (data[index2].currentYPos < this.initialYCoordinate[index1]){
+      if (Math.abs(data[index2].currentYPos - this.initialYCoordinate[index1]) < this.layout.distPerCountry()) {
+        data[index2].currentYPos = this.initialYCoordinate[index1]
+      } else {
+        data[index2].currentYPos = data[index2].currentYPos + this.animation.animationSpeed 
+      };
+    };
+    
+    if (data[index1].currentYPos == this.initialYCoordinate[index2] && data[index2].currentYPos == this.initialYCoordinate[index1]) {
+      //change order inside mappedData
+      const storedValue = data[index1];
+      data[index1] = data[index2];
+      data[index2] = storedValue;
+      this.animation.swapping = false;
+      return data
+    };     
+
+  };
+
+  // sorting algorithm
+  this.bubbleSort = function (data, criteria) {
+    //read criteria
+    if (criteria == `production`) {
+      for (let i = 0; i < data.length; i++) {
+        let count = 0;
+        for (let j = 0; j < data.length - 1; j++) {
+          if (data[j + 1].production < data[j].production) {
+            this.swap(data, j, j+1);
+            if (this.animation.swapping == true) {
+              return data
+            }
+            count++;
+          };
+        };
+        if (count == 0) {
+          break
+        };
+      };
+      this.animation.sortedBy = criteria
+      return data;
+    } else if (criteria == `consumption`) {
+      for (let i = 0; i < data.length; i++) {
+        let count = 0;
+        for (let j = 0; j < data.length - 1; j++) {
+          if (data[j + 1].consumption < data[j].consumption) {
+            this.swap(data, j, j+1);
+            if (this.animation.swapping == true) {
+              return data
+            }
+            count++;
+          };
+        };
+        if (count == 0) {
+          break
+        };
+      };
+      this.animation.sortedBy = criteria
+      return data;
+    };
   };
 
   /////////////////////////////////////// Create Important Values ///////////////////////////////////
@@ -280,10 +358,8 @@ function GlobalCoffeeConsumptionVsProduction() {
       
       console.log(`Start animation`);
 
-      //Animation takes place here
-      
-      //end of animation
-      this.animation.sortedBy = this.radioButton.value();
+      this.bubbleSort(this.mappedData, this.radioButton.value())
+
     };
   };
 
