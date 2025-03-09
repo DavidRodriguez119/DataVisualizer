@@ -204,50 +204,6 @@ function GlobalCoffeeConsumptionVsProduction() {
     )
   };
 
-  //swap the value of two objects inside an array
-  this.swap = function(data, index1, index2){
-    //swap animation start
-    this.animation.swapping = true;
-    //change positions 
-    if (data[index1].currentYPos > this.initialYCoordinate[index2]) {
-      if (Math.abs(data[index1].currentYPos - this.initialYCoordinate[index2]) < this.layout.distPerCountry()) {
-        data[index1].currentYPos = this.initialYCoordinate[index2]
-      } else {
-        data[index1].currentYPos -= this.animation.animationSpeed 
-      };
-    } else if (data[index1].currentYPos < this.initialYCoordinate[index2]){
-      if (Math.abs(data[index1].currentYPos - this.initialYCoordinate[index2]) < this.layout.distPerCountry()) {
-        data[index1].currentYPos = this.initialYCoordinate[index2]
-      } else {
-        data[index1].currentYPos = data[index1].currentYPos + this.animation.animationSpeed 
-      };
-    };
-
-    if (data[index2].currentYPos > this.initialYCoordinate[index1]) {
-      if (Math.abs(data[index2].currentYPos - this.initialYCoordinate[index1]) < this.layout.distPerCountry()) {
-        data[index2].currentYPos = this.initialYCoordinate[index1]
-      } else {
-        data[index2].currentYPos -= this.animation.animationSpeed 
-      };
-    } else if (data[index2].currentYPos < this.initialYCoordinate[index1]){
-      if (Math.abs(data[index2].currentYPos - this.initialYCoordinate[index1]) < this.layout.distPerCountry()) {
-        data[index2].currentYPos = this.initialYCoordinate[index1]
-      } else {
-        data[index2].currentYPos = data[index2].currentYPos + this.animation.animationSpeed 
-      };
-    };
-    
-    if (data[index1].currentYPos == this.initialYCoordinate[index2] && data[index2].currentYPos == this.initialYCoordinate[index1]) {
-      //change order inside mappedData
-      const storedValue = data[index1];
-      data[index1] = data[index2];
-      data[index2] = storedValue;
-      this.animation.swapping = false;
-      return data
-    };     
-
-  };
-
   // sorting algorithm
   this.bubbleSort = function (data, criteria) {
     //read criteria
@@ -288,6 +244,43 @@ function GlobalCoffeeConsumptionVsProduction() {
       this.animation.sortedBy = criteria
       return data;
     };
+  };
+
+  //swap the value of two objects inside an array
+  this.swap = function(data, index1, index2){
+    //swap animation start
+    this.animation.swapping = true;
+
+    //change positions 
+    data[index1].currentYPos = this.changeYPos(data[index1].currentYPos, this.initialYCoordinate[index2]);
+    data[index2].currentYPos = this.changeYPos(data[index2].currentYPos, this.initialYCoordinate[index1]);
+    
+    if (data[index1].currentYPos == this.initialYCoordinate[index2] && data[index2].currentYPos == this.initialYCoordinate[index1]) {
+      //change order inside mappedData
+      const storedValue = data[index1];
+      data[index1] = data[index2];
+      data[index2] = storedValue;
+      this.animation.swapping = false;
+      return data
+    };     
+  };
+
+  //Gradually change two yPos values to create the animation
+  this.changeYPos = function(dataYPos, newYPos){
+    if (dataYPos > newYPos) {
+      if (Math.abs(dataYPos - newYPos) < this.layout.distPerCountry()) {
+        dataYPos = newYPos
+      } else {
+        dataYPos -= this.animation.animationSpeed 
+      };
+    } else if (dataYPos < newYPos){
+      if (Math.abs(dataYPos - newYPos) < this.layout.distPerCountry()) {
+        dataYPos = newYPos
+      } else {
+        dataYPos = dataYPos + this.animation.animationSpeed 
+      };
+    };
+    return dataYPos
   };
 
   /////////////////////////////////////// Create Important Values ///////////////////////////////////
