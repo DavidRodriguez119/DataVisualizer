@@ -8,6 +8,7 @@ function setup() {
   canvasContainer = select('#app');
   var c = createCanvas(1024, 576);
   c.parent('app');
+  
 
   // Create a new gallery object.
   gallery = new Gallery();
@@ -21,7 +22,7 @@ function setup() {
   gallery.addVisual(new AverageDailyScreen());
   gallery.addVisual(new CatPopulationByCountry());
   gallery.addVisual(new GlobalCoffeeConsumptionVsProduction());
-
+  
 }
 
 function draw() {
