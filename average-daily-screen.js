@@ -408,6 +408,17 @@ function AverageDailyScreen() {
         }
         cursor(ARROW);
       }
+            // --- Display Raw Screen_Time_Hours Data alongside Radar Chart ---
+      // This block displays the screen time values (aggregated) as text next to the radar chart.
+      let dataStartX = this.radarChart.x + this.radarChart.diameter / 2 + 90;
+      let dataStartY = this.radarChart.y - this.radarChart.diameter / 2;
+      fill(0);
+      textSize(12);
+      textAlign(LEFT, TOP);
+      text("Screen_Time_Hours Data:", dataStartX, dataStartY);
+      for (let i = 0; i < radarLabels.length; i++) {
+          text(`${radarLabels[i]}: ${radarData[i].toFixed(2)} hrs`, dataStartX, dataStartY + 18 * (i + 1));
+      }
   
     };
   
