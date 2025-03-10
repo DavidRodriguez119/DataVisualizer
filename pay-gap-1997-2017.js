@@ -1,173 +1,271 @@
 function PayGapTimeSeries() {
+    // VISUALISATION NAME
+    this.name = 'Pay gap: 1997-2017';
 
-  // Name for the visualisation to appear in the menu bar.
-  this.name = 'Pay gap: 1997-2017';
+    // UNIQUE ID FOR VISUALISATION
+    this.id = 'pay-gap-timeseries';
 
-  // Each visualisation must have a unique ID with no special
-  // characters.
-  this.id = 'pay-gap-timeseries';
+    // TITLE TO DISPLAY ABOVE PLOT
+    this.title = 'Gender Pay Gap: Average difference between male and female pay.';
 
-  // Title to display above the plot.
-  this.title = 'Gender Pay Gap: Average difference between male and female pay.';
+    // AXIS LABELS
+    this.xAxisLabel = 'year';
+    this.yAxisLabel = '%';
 
-  // Names for each axis.
-  this.xAxisLabel = 'year';
-  this.yAxisLabel = '%';
+    // PLOT LAYOUT OBJECT
+    var marginSize = 35;
+    this.layout = {
+      marginSize: marginSize,
 
-  var marginSize = 35;
+      leftMargin: marginSize * 2,
+      rightMargin: width - marginSize,
+      topMargin: marginSize + 20,
+      bottomMargin: height - marginSize * 2,
+      pad: 5,
+      // SETS WHETHER TO DRAW BACKGROUND GRID
+      grid: true,
+      // DEFINE NUMBER OF TICK LABELS FOR X AXIS
+      numXTickLabels: 10,
+      // DEFINE NUMBER OF TICK LABELS FOR Y AXIS
+      numYTickLabels: 8,
+      // FUNCTION TO CALCULATE PLOT WIDTH
+      plotWidth: function() {
+        return this.rightMargin - this.leftMargin;
+      },
+      // FUNCTION TO CALCULATE PLOT HEIGHT
+      plotHeight: function() {
+        return this.bottomMargin - this.topMargin;
+      }
+    };
 
-  // Layout object to store all common plot layout parameters and
-  // methods.
-  this.layout = {
-    marginSize: marginSize,
+    // DATA LOADING FLAG
+    this.loaded = false;
 
-    // Locations of margin positions. Left and bottom have double margin
-    // size due to axis and tick labels.
-    leftMargin: marginSize * 2,
-    rightMargin: width - marginSize,
-    topMargin: marginSize,
-    bottomMargin: height - marginSize * 2,
-    pad: 5,
+    // DATA POINTS FOR HOVER
+      this.dataPoints = []; // We'll store (x, y, year, payGap) for hover
 
-    plotWidth: function() {
-      return this.rightMargin - this.leftMargin;
-    },
+    // PRELOAD FUNCTION - LOADS DATA
+    this.preload = function() {
+      var self = this;
+      this.data = loadTable(
+        './data/pay-gap/all-employees-hourly-pay-by-gender-1997-2017.csv',
+        'csv',
+        'header',
+        function(table) {
+          self.loaded = true;
+        }
+      );
+    };
 
-    plotHeight: function() {
-      return this.bottomMargin - this.topMargin;
-    },
+    // SETUP FUNCTION - CALLED AFTER PRELOAD
+    this.setup = function() {
+      // CHECK IF DATA LOADED
+      if (!this.loaded) {
+        console.log('Data not yet loaded');
+        return;
+      }
 
-    // Boolean to enable/disable background grid.
-    grid: true,
+      // SET FONT DEFAULTS
+      textSize(16);
 
-    // Number of axis tick labels to draw so that they are not drawn on
-    // top of one another.
-    numXTickLabels: 10,
-    numYTickLabels: 8,
-  };
+      // DETERMINE MIN/MAX YEARS
+      this.startYear = this.data.getNum(0, 'year');
+      this.endYear = this.data.getNum(this.data.getRowCount() - 1, 'year');
 
-  // Property to represent whether data has been loaded.
-  this.loaded = false;
+      // PAY GAP RANGE
+      this.minPayGap = 0;
+      this.maxPayGap = max(this.data.getColumn('pay_gap'));
 
-  // Preload the data. This function is called automatically by the
-  // gallery when a visualisation is added.
-  this.preload = function() {
-    var self = this;
-    this.data = loadTable(
-      './data/pay-gap/all-employees-hourly-pay-by-gender-1997-2017.csv', 'csv', 'header',
-      // Callback function to set the value
-      // this.loaded to true.
-      function(table) {
-        self.loaded = true;
-      });
-  };
+      // CREATE DATA POINTS ARRAY FOR HOVER
+      this.createDataPointsArray();
+    };
 
-  this.setup = function() {
-    // Font defaults.
-    textSize(16);
+    // CREATE DATA POINTS ARRAY
+    this.createDataPointsArray = function() {
+      // ARRAY TO HOLD DATA POINT POSITIONS
+      this.dataPoints = [];
 
-    // Set min and max years: assumes data is sorted by date.
-    this.startYear = this.data.getNum(0, 'year');
-    this.endYear = this.data.getNum(this.data.getRowCount() - 1, 'year');
+      // NEED PREVIOUS ROW FOR LINES
+      let previous = null;
+      let numYears = this.endYear - this.startYear;
 
-    // Find min and max pay gap for mapping to canvas height.
-    this.minPayGap = 0;         // Pay equality (zero pay gap).
-    this.maxPayGap = max(this.data.getColumn('pay_gap'));
-  };
+      // LOOP THROUGH DATA ROWS
+      for (var i = 0; i < this.data.getRowCount(); i++) {
+        var current = {
+          year: this.data.getNum(i, 'year'),
+          payGap: this.data.getNum(i, 'pay_gap')
+        };
 
-  this.destroy = function() {
-  };
+        // CONVERT DATA TO X, Y
+        let x = this.mapYearToWidth(current.year);
+        let y = this.mapPayGapToHeight(current.payGap);
 
-  this.draw = function() {
-    if (!this.loaded) {
-      console.log('Data not yet loaded');
-      return;
-    }
+        // STORE FOR HOVER DETECTION
+        this.dataPoints.push({
+          x: x,
+          y: y,
+          year: current.year,
+          payGap: current.payGap
+        });
 
-    // Draw the title above the plot.
-    this.drawTitle();
+        previous = current;
+      }
+    };
 
-    // Draw all y-axis labels.
-    drawYAxisTickLabels(this.minPayGap,
-                        this.maxPayGap,
-                        this.layout,
-                        this.mapPayGapToHeight.bind(this),
-                        0);
+    // DESTROY FUNCTION - CLEANUP
+    this.destroy = function () {
+      console.log("PayGapTimeSeries destroy() called - Enhanced Reset");
 
-    // Draw x and y axis.
-    drawAxis(this.layout);
+      // RESET P5 DRAWING STATES
+      textSize(16);
+      textFont('Arial'); 
+      textAlign(LEFT, TOP);
+      rectMode(CORNER);
+      ellipseMode(CENTER);
+      fill(0);
+      stroke(0);
+      strokeWeight(1);
+      colorMode(RGB, 255);
+      cursor(ARROW);
+      angleMode(RADIANS);
+    };
 
-    // Draw x and y axis labels.
-    drawAxisLabels(this.xAxisLabel,
-                   this.yAxisLabel,
-                   this.layout);
 
-    // Plot all pay gaps between startYear and endYear using the width
-    // of the canvas minus margins.
-    var previous;
-    var numYears = this.endYear - this.startYear;
+    // DRAW FUNCTION - MAIN RENDER LOOP
+    this.draw = function() {
+      // CHECK IF DATA LOADED
+      if (!this.loaded) {
+        console.log('Data not yet loaded');
+        return;
+      }
 
-    // Loop over all rows and draw a line from the previous value to
-    // the current.
-    for (var i = 0; i < this.data.getRowCount(); i++) {
+      // SET BACKGROUND
+      background(255);
+      // DRAW PLOT TITLE
+      this.drawTitle();
 
-      // Create an object to store data for the current year.
-      var current = {
-        // Convert strings to numbers.
-        'year': this.data.getNum(i, 'year'),
-        'payGap': this.data.getNum(i, 'pay_gap')
-      };
+      // DRAW Y-AXIS LABELS, AXES
+      drawYAxisTickLabels(this.minPayGap,
+                          this.maxPayGap,
+                          this.layout,
+                          this.mapPayGapToHeight.bind(this),
+                          0);
+      drawAxis(this.layout);
+      drawAxisLabels(this.xAxisLabel, this.yAxisLabel, this.layout);
 
-      if (previous != null) {
-        // Draw line segment connecting previous year to current
-        // year pay gap.
-        stroke(0);
-        line(this.mapYearToWidth(previous.year),
-             this.mapPayGapToHeight(previous.payGap),
-             this.mapYearToWidth(current.year),
-             this.mapPayGapToHeight(current.payGap));
+      // DRAW PAY GAP LINE
+      this.drawPayGapLine();
 
-        // The number of x-axis labels to skip so that only
-        // numXTickLabels are drawn.
-        var xLabelSkip = ceil(numYears / this.layout.numXTickLabels);
+      // DRAW DATA POINT CIRCLES
+      this.drawDataPointCircles();
 
-        // Draw the tick label marking the start of the previous year.
-        if (i % xLabelSkip == 0) {
-          drawXAxisTickLabel(previous.year, this.layout,
-                             this.mapYearToWidth.bind(this));
-        }
-      }
+      // HANDLE HOVER TOOLTIP
+      this.handleHoverTooltip();
+    };
 
-      // Assign current year to previous year so that it is available
-      // during the next iteration of this loop to give us the start
-      // position of the next line segment.
-      previous = current;
-    }
-  };
+    // DRAW PLOT TITLE FUNCTION
+    this.drawTitle = function() {
+      fill(0);
+      noStroke();
+      textAlign('center', 'center');
+      textSize(16);
+      text(this.title,
+           (this.layout.plotWidth() / 2) + this.layout.leftMargin,
+           this.layout.topMargin - (this.layout.marginSize / 2));
+    };
 
-  this.drawTitle = function() {
-    fill(0);
-    noStroke();
-    textAlign('center', 'center');
+    // MAP YEAR TO PLOT WIDTH
+    this.mapYearToWidth = function(value) {
+      return map(value,
+                 this.startYear,
+                 this.endYear,
+                 this.layout.leftMargin,   
+                 this.layout.rightMargin);
+    };
 
-    text(this.title,
-         (this.layout.plotWidth() / 2) + this.layout.leftMargin,
-         this.layout.topMargin - (this.layout.marginSize / 2));
-  };
+    // MAP PAY GAP TO PLOT HEIGHT
+    this.mapPayGapToHeight = function(value) {
+      return map(value,
+                 this.minPayGap,
+                 this.maxPayGap,
+                 this.layout.bottomMargin, 
+                 this.layout.topMargin);   
+    };
 
-  this.mapYearToWidth = function(value) {
-    return map(value,
-               this.startYear,
-               this.endYear,
-               this.layout.leftMargin,   // Draw left-to-right from margin.
-               this.layout.rightMargin);
-  };
+    // DRAW PAY GAP LINE FUNCTION
+    this.drawPayGapLine = function() {
+      // LOOP AND CONNECT DATA POINTS
+      stroke(0);
+      for (let i = 0; i < this.dataPoints.length - 1; i++) {
+        let curr = this.dataPoints[i];
+        let next = this.dataPoints[i+1];
+        line(curr.x, curr.y, next.x, next.y);
+      }
 
-  this.mapPayGapToHeight = function(value) {
-    return map(value,
-               this.minPayGap,
-               this.maxPayGap,
-               this.layout.bottomMargin, // Smaller pay gap at bottom.
-               this.layout.topMargin);   // Bigger pay gap at top.
-  };
-}
+      // X-AXIS TICK LABELS
+      let numYears = this.endYear - this.startYear;
+      let xLabelSkip = ceil(numYears / this.layout.numXTickLabels);
+
+      // DRAW LABELS BASED ON SKIP VALUE
+      for (let i = 0; i < this.dataPoints.length; i++) {
+        let dp = this.dataPoints[i];
+        let indexYear = dp.year - this.startYear;
+        if (indexYear % xLabelSkip == 0) {
+          drawXAxisTickLabel(dp.year, this.layout, this.mapYearToWidth.bind(this));
+        }
+      }
+    };
+
+    // DRAW DATA POINT CIRCLES FUNCTION
+    this.drawDataPointCircles = function() {
+      noStroke();
+      fill(0);
+      for (let i = 0; i < this.dataPoints.length; i++) {
+        let dp = this.dataPoints[i];
+        ellipse(dp.x, dp.y, 5, 5);
+      }
+    };
+
+
+    // HANDLE HOVER TOOLTIP FUNCTION
+    this.handleHoverTooltip = function() {
+      // HOVER RADIUS
+      let hoverRadius = 8;
+      for (let i = 0; i < this.dataPoints.length; i++) {
+        let dp = this.dataPoints[i];
+        let d = dist(mouseX, mouseY, dp.x, dp.y);
+        if (d < hoverRadius) {
+          // HIGHLIGHT POINT ON HOVER
+          fill(255, 0, 0);
+          noStroke();
+          ellipse(dp.x, dp.y, 8, 8);
+
+          // TOOLTIP TEXT
+          let tooltipText = `Year: ${dp.year}\nGap: ${dp.payGap.toFixed(1)}%`;
+          let tipW = textWidth('Year: 0000  Gap: 00.0%') + 10;
+          let tipH = 32;
+
+          // TOOLTIP RECTANGLE
+          fill(255, 255, 200);
+          stroke(0);
+          strokeWeight(0.5);
+          rectMode(CENTER);
+          rect(dp.x, dp.y - 35, tipW, tipH, 4);
+
+          // TOOLTIP TEXT DISPLAY
+          fill(0);
+          noStroke();
+          textSize(12);
+          textAlign(CENTER, CENTER);
+          let lines = tooltipText.split('\n');
+          let lineHeight = 14;
+          for (let j = 0; j < lines.length; j++) {
+            text(lines[j], dp.x, (dp.y - 35) - (lineHeight*(lines.length-1)/2) + (j*lineHeight));
+          }
+
+          // STOP CHECKING AFTER HOVER DETECTED
+          return;
+        }
+      }
+    };
+  }

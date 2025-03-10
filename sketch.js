@@ -19,9 +19,9 @@ function setup() {
   gallery.addVisual(new PayGapByJob2017());
   gallery.addVisual(new PayGapTimeSeries());
   gallery.addVisual(new ClimateChange());
-  gallery.addVisual(new AverageDailyScreen());
   gallery.addVisual(new CatPopulationByCountry());
   gallery.addVisual(new GlobalCoffeeConsumptionVsProduction());
+  gallery.addVisual(new AverageDailyScreen());
   
 }
 

@@ -1,228 +1,212 @@
 //
 // AverageDailyScreen.js
-// ----------------------
-// This class handles loading data from a CSV file containing
-// average daily screen time. It displays either the top 6 countries
-// for a chosen year or the screen times by country for a chosen
-// age group and year. A radar chart is used to visualize the data.
 //
 
 function AverageDailyScreen() {
-  // Name for the visualization to appear in the menu bar.
+
+  // Name for the visualisation to appear in the menu bar.
   this.name = 'Average Daily Screen';
 
-  // Each visualization must have a unique ID with no special characters.
+  // Each visualisation must have a unique ID with no special characters.
   this.id = 'average-daily-screen';
 
-  // Flags and data
-  // --------------
-  // Data loading status
-  this.loaded = false;
-  // Table data loaded from CSV
+  // Data and table objects for screen time data.
   this.data = null;
+  this.loaded = false;
 
-  // The selected age group, if any
-  this.selectedAgeGroup = null;
-  // The selected year, if an age group is chosen
-  this.selectedYear = null;
-  // The current year for top 6 countries (slider)
+  // Value for the current year displayed.
   this.currentYear = 2020;
 
-  // Year slider (for top 6 countries)
+  // The selected age group, default null for top 6 countries view
+  this.selectedAgeGroup = null;
+  // The selected year if an age group is selected
+  this.selectedYear = null;
+
+  // UI Elements: slider and dropdowns
   this.yearSlider = null;
-  // Age group dropdown
   this.ageGroupSelect = null;
-  // Year dropdown (appears if an age group is chosen)
   this.yearSelect = null;
 
   // Radar chart object
   this.radarChart = null;
-  // Progress for animating the chart from 0..1
-  this.animationProgress = 0;
+  this.animationProgress = 0; // Animation progress for radar chart
 
-  // Prevent multiple setups
+  // Prevent multiple setup calls
   this.uiInitialized = false;
 
-  // ----------------------------------------
-  // PRELOAD: Load the CSV data
-  // ----------------------------------------
-  this.preload = function () {
+
+  // Preload data table from CSV file
+  this.preload = function() {
     const self = this;
     this.data = loadTable(
       './data/average-daily-screen-time/average-daily-screen-time.csv',
       'csv',
       'header',
-      function (table) {
-        // If successful, mark as loaded
+      // Callback function to set loaded to true when data is loaded
+      function(table) {
         self.loaded = true;
       },
-      function (err) {
-        // If there's an error, log it
-        console.error('Error loading CSV:', err);
+      // Error callback if data loading fails
+      function(error) {
+        console.error("Data loading error:", error);
       }
     );
   };
 
-  // ----------------------------------------
-  // SETUP: Initialize UI elements
-  // ----------------------------------------
-  this.setup = function () {
-    // Only run once, after data is loaded
+
+  this.setup = function() {
+    // Ensure setup only runs once and data is loaded
     if (!this.loaded || this.uiInitialized) {
       return;
     }
     this.uiInitialized = true;
 
-    // Positioning for the slider and dropdowns
+    // UI Element positions
     const sliderX = 350;
     const sliderY = 120;
-    const ageGroupX = 350;
-    const ageGroupY = 150;
-    const yearSelectX = 350;
-    const yearSelectY = 170;
+    const ageGroupDropdownX = 350;
+    const ageGroupDropdownY = 150;
+    const yearDropdownX = 350;
+    const yearDropdownY = 170;
 
-    // 1) Create the slider for “Top 6” year selection
-    //    Hides if an age group is selected
+
+    // Create year slider for "Top 6" view, hidden when age group selected
     this.yearSlider = createSlider(2020, 2024, this.currentYear, 1);
     this.yearSlider.position(sliderX, sliderY);
-    // The style line is somewhat unusual; it sets CSS. We'll keep it as is.
-    this.yearSlider.style('176.25', '27px');
-    this.yearSlider.input(this.onYearChange.bind(this));
+    this.yearSlider.style('width', '176.25px'); // Consistent width style
+    this.yearSlider.input(this.onYearSliderChange.bind(this));
 
-    // 2) Create the age group dropdown
+
+    // Create age group dropdown
     this.ageGroupSelect = createSelect();
-    this.ageGroupSelect.position(ageGroupX, ageGroupY);
+    this.ageGroupSelect.position(ageGroupDropdownX, ageGroupDropdownY);
     this.ageGroupSelect.style('font-size', '14px');
     this.ageGroupSelect.option('Select Age Group');
-    this.populateAgeGroupOptions();
-    this.ageGroupSelect.changed(this.ageGroupSelected.bind(this));
+    this.populateAgeGroupDropdown(); // Populate options based on data
+    this.ageGroupSelect.changed(this.onAgeGroupDropdownChange.bind(this));
 
-    // 3) Create the Radar chart around (437, 300) with diameter 250
+
+    // Radar chart initialization, position and diameter
     this.radarChart = new RadarChart(437, 300, 250);
 
-    // Force an initial draw
+    // Initial draw call to render the visualization
     this.draw();
   };
 
-  // ----------------------------------------
-  // POPULATE AGE GROUP OPTIONS
-  // ----------------------------------------
-  // This function scans the CSV data for all age groups
-  // that have at least 3 countries from 2020..2024
-  this.populateAgeGroupOptions = function () {
-    if (!this.loaded || !this.ageGroupSelect) return;
 
-    // We'll gather all age groups that appear with >= 3 countries
-    let ageGroups = new Set();
+  // Populates age group dropdown with valid age groups from the dataset.
+  this.populateAgeGroupDropdown = function() {
+    if (!this.loaded || !this.ageGroupSelect) {
+      return; // Ensure data loaded and dropdown exists
+    }
+
+    let ageGroups = new Set(); // Use a set to avoid duplicates
     for (let year = 2020; year <= 2024; year++) {
       let yearData = this.data.getRows().filter(row => row.getNum('Year') === year);
       for (let row of yearData) {
         let ageGroup = row.getString('Age_Group');
+        // Check if age group has at least 3 countries in data for any year 2020-2024
         let countriesForAgeGroup = new Set(
           yearData
             .filter(r => r.getString('Age_Group') === ageGroup)
             .map(r => r.getString('Country'))
         );
-        // If there are at least 3 countries for that age group in that year
         if (countriesForAgeGroup.size >= 3) {
           ageGroups.add(ageGroup);
         }
       }
     }
 
-    // We'll sort them numerically by the first number (like 18, 25, etc.)
+    // Sort age groups numerically (based on starting age)
     let sortedAgeGroups = Array.from(ageGroups).sort((a, b) => {
-      let aNum = parseInt(a.match(/\d+/)[0]);
+      let aNum = parseInt(a.match(/\d+/)[0]); // Extract number from age group string
       let bNum = parseInt(b.match(/\d+/)[0]);
       return aNum - bNum;
     });
 
-    // Populate the dropdown
+    // Add sorted age groups as options to the dropdown
     for (let ageGroup of sortedAgeGroups) {
       this.ageGroupSelect.option(ageGroup);
     }
   };
 
-  // ----------------------------------------
-  // EVENT: AGE GROUP SELECTED
-  // ----------------------------------------
-  // If an age group is chosen, hide the year slider and show a year dropdown
-  // Otherwise, revert to the “Top 6 countries” slider approach
-  this.ageGroupSelected = function () {
-    if (!this.ageGroupSelect) return;
-    const chosen = this.ageGroupSelect.value();
-    this.animationProgress = 0; // reset animation
 
-    if (chosen && chosen !== 'Select Age Group') {
-      this.selectedAgeGroup = chosen;
+  // Handles event when age group is selected from dropdown.
+  this.onAgeGroupDropdownChange = function() {
+    if (!this.ageGroupSelect) {
+      return; // Exit if dropdown is not initialized
+    }
+    const selectedGroup = this.ageGroupSelect.value();
+    this.animationProgress = 0; // Reset animation
 
-      // Hide the slider if an age group is chosen
+    if (selectedGroup && selectedGroup !== 'Select Age Group') {
+      // Valid age group selected
+      this.selectedAgeGroup = selectedGroup;
+
+      // Hide year slider, show year dropdown
       if (this.yearSlider) {
         this.yearSlider.hide();
       }
-
-      // Remove any existing year dropdown
       if (this.yearSelect) {
         this.yearSelect.remove();
         this.yearSelect = null;
       }
+      this.createYearDropdown(); // Create year dropdown for selected age group
 
-      // Create a new year dropdown for the chosen age group
-      this.createYearSelectDropdown();
     } else {
-      // Revert to “Top 6 countries” approach
+      // "Select Age Group" or no selection, revert to "Top 6" view
       this.selectedAgeGroup = null;
       if (this.yearSelect) {
         this.yearSelect.remove();
         this.yearSelect = null;
       }
-      // Show the slider again
       if (this.yearSlider) {
-        this.yearSlider.show();
+        this.yearSlider.show(); // Show year slider again
       }
       this.selectedYear = null;
     }
 
-    this.draw();
+    this.draw(); // Redraw visualization
   };
 
-  // ----------------------------------------
-  // CREATE YEAR SELECT DROPDOWN
-  // ----------------------------------------
-  // If an age group is chosen, we show a dropdown of valid years
-  this.createYearSelectDropdown = function () {
-    const yearSelectX = 350;
-    const yearSelectY = 107;
+
+  // Creates year dropdown, populated with valid years for selected age group.
+  this.createYearDropdown = function() {
+    const yearDropdownX = 350;
+    const yearDropdownY = 107;
 
     this.yearSelect = createSelect();
-    this.yearSelect.position(yearSelectX, yearSelectY);
+    this.yearSelect.position(yearDropdownX, yearDropdownY);
     this.yearSelect.style('font-size', '14px');
 
-    // Filter the data for only this age group
-    let validYears = new Set();
-    let filteredData = this.data
-      .getRows()
-      .filter(row => row.getString('Age_Group') === this.selectedAgeGroup);
 
-    // Gather all the years that appear
+    // Filter data for the selected age group
+    let validYears = new Set();
+    let filteredData = this.data.getRows().filter(
+      row => row.getString('Age_Group') === this.selectedAgeGroup
+    );
+
+
+    // Collect all years available for this age group
     for (let row of filteredData) {
       validYears.add(row.getNum('Year'));
     }
 
-    // For each year from 2020..2024, only add if there's >= 3 countries
+    // Add years to dropdown if they have data for at least 3 countries
     for (let year = 2020; year <= 2024; year++) {
       if (validYears.has(year)) {
         let yearData = filteredData.filter(r => r.getNum('Year') === year);
-        let countriesForYear = new Set(yearData.map(r => r.getString('Country')));
-        if (countriesForYear.size >= 3) {
-          this.yearSelect.option(year, year);
+        let countriesInYear = new Set(yearData.map(r => r.getString('Country')));
+        if (countriesInYear.size >= 3) {
+          this.yearSelect.option(year, year); // Add year to dropdown
         }
       }
     }
 
-    this.yearSelect.changed(this.onYearSelectChange.bind(this));
 
-    // Auto‐select the first option if it exists
+    this.yearSelect.changed(this.onYearDropdownChange.bind(this));
+
+    // Auto-select first year option if available
     let options = this.yearSelect.elt.options;
     if (options.length > 0) {
       this.yearSelect.selected(options[0].value);
@@ -232,33 +216,29 @@ function AverageDailyScreen() {
     }
   };
 
-  // ----------------------------------------
-  // EVENT: YEAR SELECT DROPDOWN CHANGE
-  // ----------------------------------------
-  // When the user picks a new year for the chosen age group
-  this.onYearSelectChange = function () {
+
+  // Handles event when year is selected from the year dropdown.
+  this.onYearDropdownChange = function() {
     if (this.yearSelect) {
       this.selectedYear = parseInt(this.yearSelect.value(), 10);
-      this.animationProgress = 0; // reset animation
-      this.draw();
+      this.animationProgress = 0; // Reset animation
+      this.draw(); // Redraw visualization
     }
   };
 
-  // ----------------------------------------
-  // EVENT: YEAR SLIDER CHANGE
-  // ----------------------------------------
-  // If no age group is selected, the user can pick a year from the slider
-  this.onYearChange = function () {
+
+  // Handles event when year slider value changes.
+  this.onYearSliderChange = function() {
     this.currentYear = parseInt(this.yearSlider.value(), 10);
-    this.animationProgress = 0; // reset animation
-    this.draw();
+    this.animationProgress = 0; // Reset animation
+    this.draw(); // Redraw visualization
   };
 
-  // ----------------------------------------
-  // DESTROY (CLEANUP WHEN SWITCHING VISUALS)
-  // ----------------------------------------
-  // Remove UI elements and mark uninitialized
+
   this.destroy = function () {
+    console.log("AverageDailyScreen destroy() called - Less Aggressive Reset");
+
+    // 1. Remove UI elements
     if (this.yearSlider) {
       this.yearSlider.remove();
       this.yearSlider = null;
@@ -271,16 +251,46 @@ function AverageDailyScreen() {
       this.yearSelect.remove();
       this.yearSelect = null;
     }
+
+    // 2. Reset SOME flags and data (modified - NOT resetting loaded/data)
     this.uiInitialized = false;
+    // this.loaded = false;     // **DO NOT RESET loaded** - Keep data loaded
+    // this.data = null;        // **DO NOT RESET data** - Keep data in memory
+    this.selectedAgeGroup = null;
+    this.selectedYear = null;
+    this.currentYear = 2020;
+    this.animationProgress = 0;
+    this.radarChart = null;
+
+    // 3. **Aggressively Reset p5.js Drawing States**
+    // Reset text styles
+    textSize(16);
+    textFont('Arial');
+    textAlign(LEFT, TOP);
+
+    // Reset shape styles
+    rectMode(CORNER);
+    ellipseMode(CENTER);
+
+    // Reset color and stroke
+    fill(0);
+    stroke(0);
+    strokeWeight(1);
+    noStroke();
+
+    colorMode(RGB, 255);
+
+    // Reset cursor
+    cursor(ARROW);
+
+    // Reset angle mode
+    angleMode(RADIANS);
   };
 
-  // ----------------------------------------
-  // DRAW: Main rendering function
-  // ----------------------------------------
-  // Either shows top 6 countries for currentYear or
-  // the data for the selectedAgeGroup in the selectedYear
-  this.draw = function () {
-    // If not loaded or not ready, show a "Loading" message
+
+  // Main render function
+  this.draw = function() {
+    // If data not loaded or setup not complete, display loading message
     if (!this.loaded || !this.uiInitialized) {
       background(255);
       textAlign(CENTER, CENTER);
@@ -289,99 +299,100 @@ function AverageDailyScreen() {
       return;
     }
 
-    // 1) Draw the background gradient
-    drawGradientBackground();
 
-    // 2) Main heading at the top
+    // Draw background gradient
+    this.drawGradientBackground();
+
+    // Visualization title
     fill(0);
     noStroke();
     textSize(20);
     textAlign(CENTER, TOP);
     text('Average Daily Screen Time Visualization', width / 2, 10);
 
-    // Arrays to store data and labels for the radar chart
-    let radarData = [];
-    let radarLabels = [];
-    let chartTitle = '';
 
-    // CASE 1: A valid age group is selected
+    let radarChartData = []; // Data for radar chart
+    let radarChartLabels = []; // Labels for radar chart
+    let chartTitle = '';     // Dynamic chart title
+
+
+    // Case 1: Age group selected, show data for selected year (or default 2020)
     if (this.selectedAgeGroup) {
-      let yearToUse = this.selectedYear !== null ? this.selectedYear : 2020;
+      let yearForData = this.selectedYear !== null ? this.selectedYear : 2020;
 
-      // Filter data for the chosen age group & year
-      let filteredData = this.data
-        .getRows()
-        .filter(
-          row =>
-            row.getString('Age_Group') === this.selectedAgeGroup &&
-            row.getNum('Year') === yearToUse
-        );
+      // Filter data for selected age group and year
+      let filteredYearData = this.data.getRows().filter(
+        row => row.getString('Age_Group') === this.selectedAgeGroup && row.getNum('Year') === yearForData
+      );
 
       // Aggregate screen time by country
-      let countryData = new Map();
-      for (let row of filteredData) {
+      let aggregatedCountryData = new Map();
+      for (let row of filteredYearData) {
         let country = row.getString('Country');
         let screenTime = row.getNum('Screen_Time_Hours');
-        if (countryData.has(country)) {
-          countryData.set(country, countryData.get(country) + screenTime);
+        if (aggregatedCountryData.has(country)) {
+          aggregatedCountryData.set(country, aggregatedCountryData.get(country) + screenTime);
         } else {
-          countryData.set(country, screenTime);
+          aggregatedCountryData.set(country, screenTime);
         }
       }
 
-      // Convert aggregated data into arrays
-      for (let [country, totalScreenTime] of countryData) {
-        let rowCount = filteredData.filter(r => r.getString('Country') === country).length;
-        radarData.push(totalScreenTime / rowCount);
-        radarLabels.push(country);
+
+      // Convert aggregated map data to arrays for radar chart
+      for (let [country, totalScreenTime] of aggregatedCountryData) {
+        let rowCount = filteredYearData.filter(r => r.getString('Country') === country).length;
+        radarChartData.push(totalScreenTime / rowCount); // Average screen time
+        radarChartLabels.push(country);
       }
 
-      // Create a dynamic chart title
-      chartTitle = `Screen Time: ${this.selectedAgeGroup} (${yearToUse})`;
 
+      // Set chart title dynamically based on selection
+      chartTitle = `Screen Time: ${this.selectedAgeGroup} (${yearForData})`;
     }
-    // CASE 2: No valid age group => show top 6 countries for the slider year
+    // Case 2: No age group selected, show top 6 countries for selected year
     else {
-      let yearData = this.data
-        .getRows()
-        .filter(row => row.getNum('Year') === this.currentYear);
+      let yearData = this.data.getRows().filter(row => row.getNum('Year') === this.currentYear);
 
-      // Sum screen time by country
-      let countryData = new Map();
+
+      // Aggregate screen time by country for top countries view
+      let aggregatedCountryData = new Map();
       for (let row of yearData) {
         let country = row.getString('Country');
         let screenTime = row.getNum('Screen_Time_Hours');
-        if (countryData.has(country)) {
-          countryData.set(country, countryData.get(country) + screenTime);
+        if (aggregatedCountryData.has(country)) {
+          aggregatedCountryData.set(country, aggregatedCountryData.get(country) + screenTime);
         } else {
-          countryData.set(country, screenTime);
+          aggregatedCountryData.set(country, screenTime);
         }
       }
 
-      // Turn map into array
-      let aggregated = [];
-      for (let [country, totalScreenTime] of countryData) {
+      // Convert aggregated data to array and calculate average
+      let aggregatedArray = [];
+      for (let [country, totalScreenTime] of aggregatedCountryData) {
         let rowCount = yearData.filter(r => r.getString('Country') === country).length;
-        aggregated.push({
-          country,
-          screenTime: totalScreenTime / rowCount
+        aggregatedArray.push({
+          country: country,
+          screenTime: totalScreenTime / rowCount // Average screen time per country
         });
       }
 
-      // Sort descending, take top 6
-      aggregated.sort((a, b) => b.screenTime - a.screenTime);
-      aggregated = aggregated.slice(0, 6);
 
-      // Prepare for the radar chart
-      for (let item of aggregated) {
-        radarData.push(item.screenTime);
-        radarLabels.push(item.country);
+      // Sort by screen time, get top 6 countries
+      aggregatedArray.sort((a, b) => b.screenTime - a.screenTime);
+      aggregatedArray = aggregatedArray.slice(0, 6);
+
+
+      // Prepare data and labels for radar chart from top countries
+      for (let item of aggregatedArray) {
+        radarChartData.push(item.screenTime);
+        radarChartLabels.push(item.country);
       }
 
-      // Dynamic chart title for top 6
+
+      // Set chart title for top countries view
       chartTitle = `Top 6 Countries (${this.currentYear})`;
 
-      // Show the slider’s year label near the slider
+      // Display year near slider in "Top 6" view
       fill(0);
       noStroke();
       textSize(14);
@@ -389,97 +400,101 @@ function AverageDailyScreen() {
       text(`Year: ${this.currentYear}`, this.yearSlider.x - 305, this.yearSlider.y - 20);
     }
 
-    // Draw a semi‐transparent rectangle behind the chart title
+
+    // Semi-transparent background for chart title
     fill(255, 180);
     noStroke();
     rectMode(CENTER);
-    let tw = textWidth(chartTitle) + 20;
-    rect(437, 103, tw, 30, 8);
+    let titleWidth = textWidth(chartTitle) + 20;
+    rect(437, 103, titleWidth, 30, 8);
 
-    // Draw the chart title at (437, 103)
+
+    // Draw chart title
     fill(0);
     noStroke();
     textSize(16);
     textAlign(CENTER, CENTER);
     text(chartTitle, 437, 103);
 
-    // Animate & draw the radar chart if we have data
-    if (radarData.length > 0) {
+
+    // Animate and draw radar chart if data exists
+    if (radarChartData.length > 0) {
       if (this.animationProgress < 1) {
         this.animationProgress += 0.02;
         this.animationProgress = min(this.animationProgress, 1);
       }
-      let animatedRadarData = radarData.map(val => val * this.animationProgress);
-      // Draw the radar chart with an empty internal title (we already drew it above)
-      this.radarChart.draw(animatedRadarData, radarLabels, '');
+      // Animate data values for radar chart
+      let animatedChartData = radarChartData.map(val => val * this.animationProgress);
+      this.radarChart.draw(animatedChartData, radarChartLabels, ''); // Draw radar chart
     }
 
-    // Tooltip on Hover
-    if (radarData.length > 0) {
-      let angleStep = TWO_PI / radarData.length;
-      for (let i = 0; i < radarData.length; i++) {
-        let scaledValue = map(
-          radarData[i] * this.animationProgress,
+
+    // Tooltip functionality for radar chart vertices
+    if (radarChartData.length > 0) {
+      let angleStep = TWO_PI / radarChartData.length;
+      for (let i = 0; i < radarChartData.length; i++) {
+        // Calculate vertex position for tooltip check
+        let vertexValue = map(
+          radarChartData[i] * this.animationProgress,
           0,
           this.radarChart.maxValue,
           0,
           this.radarChart.diameter / 2
         );
-        let px = this.radarChart.x + cos(i * angleStep - HALF_PI) * scaledValue;
-        let py = this.radarChart.y + sin(i * angleStep - HALF_PI) * scaledValue;
+        let vertexX = this.radarChart.x + cos(i * angleStep - HALF_PI) * vertexValue;
+        let vertexY = this.radarChart.y + sin(i * angleStep - HALF_PI) * vertexValue;
 
-        // Check if the mouse is near a vertex
-        let distance = dist(mouseX, mouseY, px, py);
-        if (distance < 10) {
-          cursor('pointer');
-          let tooltipText = `${radarLabels[i]}: ${radarData[i].toFixed(2)} hrs`;
-          let tipW = textWidth(tooltipText) + 12;
-          let tipH = 22;
+        // Check mouse proximity to vertex
+        let distanceToMouse = dist(mouseX, mouseY, vertexX, vertexY);
+        if (distanceToMouse < 10) {
+          cursor('pointer'); // Change cursor on hover
+          let tooltipText = `${radarChartLabels[i]}: ${radarChartData[i].toFixed(2)} hrs`;
+          let tooltipWidth = textWidth(tooltipText) + 12;
+          let tooltipHeight = 22;
 
+          // Tooltip background rectangle
           fill(255, 220);
           noStroke();
           rectMode(CENTER);
-          rect(px, py - 14, tipW, tipH, 5);
+          rect(vertexX, vertexY - 14, tooltipWidth, tooltipHeight, 5);
 
+          // Tooltip text
           fill(0);
           textSize(12);
           textAlign(CENTER, CENTER);
-          text(tooltipText, px, py - 14);
-
-          return; // Stop once we find the hovered vertex
+          text(tooltipText, vertexX, vertexY - 14);
+          return; // Exit loop after displaying tooltip
         }
       }
-      cursor(ARROW);
+      cursor(ARROW); // Reset cursor if no vertex hovered
     }
 
-    // --- Display Raw Screen_Time_Hours Data alongside Radar Chart ---
-    // This block displays the aggregated or average screen time values
-    // as text next to the radar chart for clarity.
-    let dataStartX = this.radarChart.x + this.radarChart.diameter / 2 + 90;
-    let dataStartY = this.radarChart.y - this.radarChart.diameter / 2;
+
+    // Display raw Screen_Time_Hours data values next to radar chart
+    let dataDisplayStartX = this.radarChart.x + this.radarChart.diameter / 2 + 90;
+    let dataDisplayStartY = this.radarChart.y - this.radarChart.diameter / 2;
     fill(0);
     textSize(12);
     textAlign(LEFT, TOP);
-    text("Screen_Time_Hours Data:", dataStartX, dataStartY);
+    text("Screen_Time_Hours Data:", dataDisplayStartX, dataDisplayStartY);
 
-    for (let i = 0; i < radarLabels.length; i++) {
-      text(`${radarLabels[i]}: ${radarData[i].toFixed(2)} hrs`, dataStartX, dataStartY + 18 * (i + 1));
-    };
+    // Output data values as text labels
+    for (let i = 0; i < radarChartLabels.length; i++) {
+      text(`${radarChartLabels[i]}: ${radarChartData[i].toFixed(2)} hrs`, dataDisplayStartX, dataDisplayStartY + 18 * (i + 1));
+    }
   };
 
-  // ----------------------------------------
-  // Helper: Draw a subtle vertical gradient
-  // ----------------------------------------
-  function drawGradientBackground() {
-    let topC = color(220, 240, 255);
-    let botC = color(255, 255, 255);
+
+  // Draws a subtle vertical gradient background.
+  this.drawGradientBackground = function() {
+    let topColour = color(220, 240, 255);
+    let bottomColour = color(255, 255, 255);
 
     for (let y = 0; y < height; y++) {
       let inter = map(y, 0, height, 0, 1);
-      let c = lerpColor(topC, botC, inter);
+      let c = lerpColor(topColour, bottomColour, inter);
       stroke(c);
       line(0, y, width, y);
-    };
+    }
   };
-};
-  
+}
