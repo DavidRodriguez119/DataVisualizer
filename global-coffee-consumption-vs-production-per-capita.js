@@ -348,11 +348,7 @@ function GlobalCoffeeConsumptionVsProduction() {
     //animation code
     // animation starts
     if(this.radioButton.value() != this.animation.sortedBy){
-      
-      console.log(`Start animation`);
-
-      this.bubbleSort(this.mappedData, this.radioButton.value())
-
+      this.bubbleSort(this.mappedData, this.radioButton.value());
     };
   };
 
