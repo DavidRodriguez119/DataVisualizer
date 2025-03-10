@@ -10,8 +10,6 @@ function TechDiversityGender() {
   // Layout object to store all common plot layout parameters and
   // methods.
   this.layout = {
-    // Locations of margin positions. Left and bottom have double margin
-    // size due to axis and tick labels.
     leftMargin: 130,
     rightMargin: width,
     topMargin: 30,
@@ -24,9 +22,6 @@ function TechDiversityGender() {
 
     // Boolean to enable/disable background grid.
     grid: true,
-
-    // Number of axis tick labels to draw so that they are not drawn on
-    // top of one another.
     numXTickLabels: 10,
     numYTickLabels: 8,
   };
