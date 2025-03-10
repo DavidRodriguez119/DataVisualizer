@@ -1,49 +1,50 @@
 function PayGapTimeSeries() {
-    // Name for the visualisation to appear in the menu bar.
+    // VISUALISATION NAME
     this.name = 'Pay gap: 1997-2017';
-  
-    // Unique ID for the visualization.
+
+    // UNIQUE ID FOR VISUALISATION
     this.id = 'pay-gap-timeseries';
-  
-    // Title to display above the plot.
+
+    // TITLE TO DISPLAY ABOVE PLOT
     this.title = 'Gender Pay Gap: Average difference between male and female pay.';
-  
-    // Names for each axis.
+
+    // AXIS LABELS
     this.xAxisLabel = 'year';
     this.yAxisLabel = '%';
-  
-    // Layout object to store all common plot layout parameters and methods.
+
+    // PLOT LAYOUT OBJECT
     var marginSize = 35;
     this.layout = {
       marginSize: marginSize,
-  
+
       leftMargin: marginSize * 2,
       rightMargin: width - marginSize,
       topMargin: marginSize + 20,
       bottomMargin: height - marginSize * 2,
       pad: 5,
-      // If true, draw a background grid.
+      // SETS WHETHER TO DRAW BACKGROUND GRID
       grid: true,
-      // Number of axis tick labels to draw.
+      // DEFINE NUMBER OF TICK LABELS FOR X AXIS
       numXTickLabels: 10,
+      // DEFINE NUMBER OF TICK LABELS FOR Y AXIS
       numYTickLabels: 8,
-      // Helper to compute the width of the plot
+      // FUNCTION TO CALCULATE PLOT WIDTH
       plotWidth: function() {
         return this.rightMargin - this.leftMargin;
       },
-      // Helper to compute the height of the plot
+      // FUNCTION TO CALCULATE PLOT HEIGHT
       plotHeight: function() {
         return this.bottomMargin - this.topMargin;
       }
     };
-  
-    // Data loading flag
+
+    // DATA LOADING FLAG
     this.loaded = false;
-  
-    // UI elements for interactivity
-      this.dataPoints = [];          // We'll store (x, y, year, payGap) for hover
-  
-    // Preload the data. This function is called automatically by the gallery when a visualization is added.
+
+    // DATA POINTS FOR HOVER
+      this.dataPoints = []; // We'll store (x, y, year, payGap) for hover
+
+    // PRELOAD FUNCTION - LOADS DATA
     this.preload = function() {
       var self = this;
       this.data = loadTable(
@@ -55,70 +56,69 @@ function PayGapTimeSeries() {
         }
       );
     };
-  
-    // Setup logic, called after preload
+
+    // SETUP FUNCTION - CALLED AFTER PRELOAD
     this.setup = function() {
-      // If data isn't loaded, do nothing
+      // CHECK IF DATA LOADED
       if (!this.loaded) {
         console.log('Data not yet loaded');
         return;
       }
-  
-      // Font defaults
+
+      // SET FONT DEFAULTS
       textSize(16);
-  
-      // Determine the min and max years from the data
+
+      // DETERMINE MIN/MAX YEARS
       this.startYear = this.data.getNum(0, 'year');
       this.endYear = this.data.getNum(this.data.getRowCount() - 1, 'year');
-  
-      // The pay gap ranges from 0% to some maximum
+
+      // PAY GAP RANGE
       this.minPayGap = 0;
       this.maxPayGap = max(this.data.getColumn('pay_gap'));
-  
-      // We can store all data point positions for hover detection
+
+      // CREATE DATA POINTS ARRAY FOR HOVER
       this.createDataPointsArray();
     };
-  
-    // Helper to create an array of data point positions for hover detection
+
+    // CREATE DATA POINTS ARRAY
     this.createDataPointsArray = function() {
-      // We'll fill an array with { x, y, year, payGap }
+      // ARRAY TO HOLD DATA POINT POSITIONS
       this.dataPoints = [];
-  
-      // We'll need the previous row to draw lines
+
+      // NEED PREVIOUS ROW FOR LINES
       let previous = null;
       let numYears = this.endYear - this.startYear;
-  
+
+      // LOOP THROUGH DATA ROWS
       for (var i = 0; i < this.data.getRowCount(); i++) {
         var current = {
           year: this.data.getNum(i, 'year'),
           payGap: this.data.getNum(i, 'pay_gap')
         };
-  
-        // Convert data to x, y coordinates
+
+        // CONVERT DATA TO X, Y
         let x = this.mapYearToWidth(current.year);
         let y = this.mapPayGapToHeight(current.payGap);
-  
-        // Store for hover detection
+
+        // STORE FOR HOVER DETECTION
         this.dataPoints.push({
           x: x,
           y: y,
           year: current.year,
           payGap: current.payGap
         });
-  
+
         previous = current;
       }
     };
-  
-    // ----------------------------------------
-    // DESTROY (CLEANUP WHEN SWITCHING VISUALS) 
-    // ----------------------------------------
+
+    // DESTROY FUNCTION - CLEANUP
     this.destroy = function () {
       console.log("PayGapTimeSeries destroy() called - Enhanced Reset");
-  
-      // Reset p5.js drawing states, especially those used in tooltips and drawing
+
+      // RESET P5 DRAWING STATES
       textSize(16);
-      textFont('Arial'); // Or your default font
+      textFont('Arial'); 
       textAlign(LEFT, TOP);
       rectMode(CORNER);
       ellipseMode(CENTER);
@@ -129,25 +129,22 @@ function PayGapTimeSeries() {
       cursor(ARROW);
       angleMode(RADIANS);
     };
-  
-  
-    // Main draw function
+
+
+    // DRAW FUNCTION - MAIN RENDER LOOP
     this.draw = function() {
+      // CHECK IF DATA LOADED
       if (!this.loaded) {
         console.log('Data not yet loaded');
         return;
       }
-  
-      // **Removed the gradient background call here:**
-      // this.drawGradientBackground();
-  
-      // Set background to white (or any solid color you prefer if no gradient)
-      background(255); // White background
-  
-      // Draw the title above the plot.
+
+      // SET BACKGROUND
+      background(255);
+      // DRAW PLOT TITLE
       this.drawTitle();
-  
-      // Draw y-axis tick labels, x/y axes, and axis labels
+
+      // DRAW Y-AXIS LABELS, AXES
       drawYAxisTickLabels(this.minPayGap,
                           this.maxPayGap,
                           this.layout,
@@ -155,19 +152,18 @@ function PayGapTimeSeries() {
                           0);
       drawAxis(this.layout);
       drawAxisLabels(this.xAxisLabel, this.yAxisLabel, this.layout);
-  
-      // We'll now draw the line segments from year to year
+
+      // DRAW PAY GAP LINE
       this.drawPayGapLine();
-  
-      // We'll also draw circles for each data point for clarity
+
+      // DRAW DATA POINT CIRCLES
       this.drawDataPointCircles();
-  
-      // Finally, check if the mouse is hovering near any data point
-      // and display a tooltip if so
+
+      // HANDLE HOVER TOOLTIP
       this.handleHoverTooltip();
     };
-  
-    // Draw the main title
+
+    // DRAW PLOT TITLE FUNCTION
     this.drawTitle = function() {
       fill(0);
       noStroke();
@@ -177,40 +173,40 @@ function PayGapTimeSeries() {
            (this.layout.plotWidth() / 2) + this.layout.leftMargin,
            this.layout.topMargin - (this.layout.marginSize / 2));
     };
-  
-    // Convert a year (1997..2017) to an x-coordinate
+
+    // MAP YEAR TO PLOT WIDTH
     this.mapYearToWidth = function(value) {
       return map(value,
                  this.startYear,
                  this.endYear,
-                 this.layout.leftMargin,   // Draw left-to-right from margin.
+                 this.layout.leftMargin,   
                  this.layout.rightMargin);
     };
-  
-    // Convert a pay gap value (0..some max) to a y-coordinate
+
+    // MAP PAY GAP TO PLOT HEIGHT
     this.mapPayGapToHeight = function(value) {
       return map(value,
                  this.minPayGap,
                  this.maxPayGap,
-                 this.layout.bottomMargin, // smaller gap near bottom
-                 this.layout.topMargin);   // larger gap near top
+                 this.layout.bottomMargin, 
+                 this.layout.topMargin);   
     };
-  
-    // Draw the pay gap line by connecting consecutive data points
+
+    // DRAW PAY GAP LINE FUNCTION
     this.drawPayGapLine = function() {
-      // We'll loop over dataPoints and connect consecutive points
+      // LOOP AND CONNECT DATA POINTS
       stroke(0);
       for (let i = 0; i < this.dataPoints.length - 1; i++) {
         let curr = this.dataPoints[i];
         let next = this.dataPoints[i+1];
         line(curr.x, curr.y, next.x, next.y);
       }
-  
-      // We'll also draw x-axis tick labels for every so many years
+
+      // X-AXIS TICK LABELS
       let numYears = this.endYear - this.startYear;
       let xLabelSkip = ceil(numYears / this.layout.numXTickLabels);
-  
-      // For each data point, if i is multiple of xLabelSkip, draw a tick label
+
+      // DRAW LABELS BASED ON SKIP VALUE
       for (let i = 0; i < this.dataPoints.length; i++) {
         let dp = this.dataPoints[i];
         let indexYear = dp.year - this.startYear;
@@ -219,8 +215,8 @@ function PayGapTimeSeries() {
         }
       }
     };
-  
-    // Draw circles at each data point for clarity
+
+    // DRAW DATA POINT CIRCLES FUNCTION
     this.drawDataPointCircles = function() {
       noStroke();
       fill(0);
@@ -229,45 +225,45 @@ function PayGapTimeSeries() {
         ellipse(dp.x, dp.y, 5, 5);
       }
     };
-  
-  
-    // Check if the mouse is near any data point and display a tooltip
+
+
+    // HANDLE HOVER TOOLTIP FUNCTION
     this.handleHoverTooltip = function() {
-      // We'll consider a radius of ~8 px for "hover"
+      // HOVER RADIUS
       let hoverRadius = 8;
       for (let i = 0; i < this.dataPoints.length; i++) {
         let dp = this.dataPoints[i];
         let d = dist(mouseX, mouseY, dp.x, dp.y);
         if (d < hoverRadius) {
-          // Highlight the point
+          // HIGHLIGHT POINT ON HOVER
           fill(255, 0, 0);
           noStroke();
           ellipse(dp.x, dp.y, 8, 8);
-  
-          // Create a tooltip above the point
+
+          // TOOLTIP TEXT
           let tooltipText = `Year: ${dp.year}\nGap: ${dp.payGap.toFixed(1)}%`;
           let tipW = textWidth('Year: 0000  Gap: 00.0%') + 10;
           let tipH = 32;
-  
+
+          // TOOLTIP RECTANGLE
           fill(255, 255, 200);
           stroke(0);
           strokeWeight(0.5);
           rectMode(CENTER);
           rect(dp.x, dp.y - 35, tipW, tipH, 4);
-  
-          // Now place the text
+
+          // TOOLTIP TEXT DISPLAY
           fill(0);
           noStroke();
           textSize(12);
           textAlign(CENTER, CENTER);
-          // We'll draw multi-line text by splitting on '\n'
           let lines = tooltipText.split('\n');
           let lineHeight = 14;
           for (let j = 0; j < lines.length; j++) {
             text(lines[j], dp.x, (dp.y - 35) - (lineHeight*(lines.length-1)/2) + (j*lineHeight));
           }
-  
-          // Stop checking once we find a hovered point
+
+          // STOP CHECKING AFTER HOVER DETECTED
           return;
         }
       }
